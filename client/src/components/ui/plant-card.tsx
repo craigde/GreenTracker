@@ -2,9 +2,11 @@ import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusDot } from "@/components/ui/status-dot";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Plant } from "@shared/schema";
 import { getPlantStatus, getStatusText } from "@/lib/plant-utils";
 import { formatDistanceToNow } from "@/lib/date-utils";
+import { Image } from "lucide-react";
 
 interface PlantCardProps {
   plant: Plant;
@@ -32,9 +34,30 @@ export function PlantCard({ plant, onWatered, onSelect }: PlantCardProps) {
       className="bg-white rounded-lg shadow-md mb-4 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
       onClick={handleClick}
     >
-      <CardContent className="p-4">
+      {plant.imageUrl && (
+        <div className="relative h-32 w-full">
+          <img 
+            src={plant.imageUrl} 
+            alt={plant.name} 
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      
+      <CardContent className={`p-4 ${plant.imageUrl ? 'border-t border-gray-100' : ''}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
+            {!plant.imageUrl && (
+              <Avatar className="size-8 rounded-full mr-2">
+                {plant.imageUrl ? (
+                  <AvatarImage src={plant.imageUrl} alt={plant.name} />
+                ) : (
+                  <AvatarFallback className="bg-primary/10">
+                    <Image className="size-4 text-primary" />
+                  </AvatarFallback>
+                )}
+              </Avatar>
+            )}
             <StatusDot plant={plant} />
             <h3 className="font-semibold font-heading">{plant.name}</h3>
           </div>

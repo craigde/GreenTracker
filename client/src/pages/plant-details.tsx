@@ -7,6 +7,7 @@ import { usePlants } from "@/hooks/use-plants";
 import { getPlantStatus, getStatusText } from "@/lib/plant-utils";
 import { formatDate, formatTime, formatDistanceToNow } from "@/lib/date-utils";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,14 +20,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Image } from "lucide-react";
 
 export default function PlantDetails() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id || "";
   const [_, navigate] = useLocation();
   const { toast } = useToast();
   
-  const plantId = parseInt(id);
+  const plantId = parseInt(id) || 0;
   const { useGetPlant, deletePlant, waterPlant } = usePlants();
   const { data: plantData, isLoading } = useGetPlant(plantId);
 
@@ -163,6 +165,18 @@ export default function PlantDetails() {
       </div>
 
       <div className="p-4">
+        {plant.imageUrl && (
+          <Card className="mb-6 overflow-hidden">
+            <div className="relative h-48 w-full">
+              <img 
+                src={plant.imageUrl} 
+                alt={plant.name} 
+                className="w-full h-full object-cover"
+              />
+            </div>
+          </Card>
+        )}
+
         <Card className="mb-6">
           <CardContent className="p-4">
             <h2 className="text-lg font-semibold mb-3 font-heading">Plant Details</h2>
