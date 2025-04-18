@@ -31,16 +31,19 @@ export function PlantCard({ plant, onWatered, onSelect }: PlantCardProps) {
 
   return (
     <Card 
-      className="bg-white rounded-lg shadow-md mb-4 overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+      className="bg-white rounded-lg shadow-md mb-4 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100"
       onClick={handleClick}
     >
       {plant.imageUrl && (
-        <div className="relative h-32 w-full">
+        <div className="relative h-40 w-full">
           <img 
             src={plant.imageUrl} 
             alt={plant.name} 
             className="w-full h-full object-cover"
           />
+          <div className="absolute top-3 left-3">
+            <StatusDot plant={plant} className="h-5 w-5 ring-2 ring-white" />
+          </div>
         </div>
       )}
       
@@ -48,23 +51,23 @@ export function PlantCard({ plant, onWatered, onSelect }: PlantCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             {!plant.imageUrl && (
-              <Avatar className="size-8 rounded-full mr-2">
+              <Avatar className="size-10 rounded-full mr-2">
                 {plant.imageUrl ? (
                   <AvatarImage src={plant.imageUrl} alt={plant.name} />
                 ) : (
                   <AvatarFallback className="bg-primary/10">
-                    <Image className="size-4 text-primary" />
+                    <span className="emoji-xl" role="img" aria-label="plant">🌿</span>
                   </AvatarFallback>
                 )}
               </Avatar>
             )}
-            <StatusDot plant={plant} />
-            <h3 className="font-semibold font-heading">{plant.name}</h3>
+            {!plant.imageUrl && <StatusDot plant={plant} />}
+            <h3 className="font-semibold font-heading text-base">{plant.name}</h3>
           </div>
-          <span className={`text-sm font-medium ${
-            status === 'watered' ? 'text-status-watered' : 
-            status === 'soon' ? 'text-status-soon' : 
-            'text-status-overdue'
+          <span className={`text-sm font-medium px-2 py-1 rounded-full ${
+            status === 'watered' ? 'bg-emerald-50 text-status-watered' : 
+            status === 'soon' ? 'bg-amber-50 text-status-soon' : 
+            'bg-rose-50 text-status-overdue'
           }`}>
             {statusText}
           </span>
@@ -79,7 +82,7 @@ export function PlantCard({ plant, onWatered, onSelect }: PlantCardProps) {
           {status === 'watered' ? (
             <Button 
               variant="ghost" 
-              className="text-gray-400 px-4 py-2 rounded-full text-sm font-medium cursor-default flex items-center"
+              className="text-status-watered bg-emerald-50 hover:bg-emerald-50 px-4 py-1.5 h-auto rounded-full text-sm font-medium cursor-default flex items-center"
               disabled={true}
             >
               <span className="material-icons text-sm mr-1">check_circle</span>
@@ -91,12 +94,12 @@ export function PlantCard({ plant, onWatered, onSelect }: PlantCardProps) {
               variant={status === 'overdue' ? "default" : "outline"}
               className={`${
                 status === 'overdue' 
-                  ? 'bg-primary text-white' 
-                  : 'border border-primary text-primary'
-              } px-4 py-2 rounded-full text-sm font-medium flex items-center`}
+                  ? 'bg-primary hover:bg-primary/90 text-white' 
+                  : 'border border-primary text-primary hover:bg-primary/5'
+              } px-4 py-1.5 h-auto rounded-full text-sm font-medium flex items-center shadow-sm`}
             >
               <span className="material-icons text-sm mr-1">opacity</span>
-              Water
+              Water Now
             </Button>
           )}
         </div>

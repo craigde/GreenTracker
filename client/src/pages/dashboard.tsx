@@ -49,21 +49,31 @@ export default function Dashboard() {
 
   return (
     <div className="px-4 py-6">
-      <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 font-heading">My Plants</h1>
-        <p className="text-gray-600">
-          You have{" "}
-          <span className="font-semibold text-status-overdue">
-            {plantsToWaterToday.length}
-          </span>{" "}
-          {plantsToWaterToday.length === 1 ? "plant" : "plants"} to water today
+      <header className="mb-8">
+        <h1 className="text-2xl font-bold text-gray-800 font-heading">Welcome to PlantDaddy</h1>
+        <p className="text-gray-600 mt-2">
+          {plantsToWaterToday.length > 0 ? (
+            <>
+              You have{" "}
+              <span className="font-semibold text-status-overdue">
+                {plantsToWaterToday.length}
+              </span>{" "}
+              {plantsToWaterToday.length === 1 ? "plant" : "plants"} to water today
+            </>
+          ) : (
+            <>All your plants are watered and happy!</>
+          )}
         </p>
       </header>
 
       {plants.length === 0 ? (
-        <div className="text-center py-10">
-          <p className="text-gray-500 mb-6">No plants added yet</p>
-          <Button onClick={handleAddPlant} className="bg-primary text-white">
+        <div className="text-center py-12 px-4 bg-gray-50 rounded-xl shadow-sm">
+          <div className="text-6xl mb-4 emoji-xl">🪴</div>
+          <h3 className="text-xl font-bold text-gray-800 mb-2">No plants yet!</h3>
+          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+            Add your first plant to PlantDaddy and never forget to water your green friends again.
+          </p>
+          <Button onClick={handleAddPlant} className="bg-primary hover:bg-primary/90 text-white font-medium px-6">
             Add Your First Plant
           </Button>
         </div>
