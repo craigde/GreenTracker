@@ -118,12 +118,13 @@ export class MemStorage implements IStorage {
 
   async createPlant(insertPlant: InsertPlant): Promise<Plant> {
     const id = this.plantIdCounter++;
-    // Ensure species and notes are null if not provided
+    // Ensure species, notes, and imageUrl are null if not provided
     const plant: Plant = { 
       ...insertPlant, 
       id,
       species: insertPlant.species || null,
-      notes: insertPlant.notes || null
+      notes: insertPlant.notes || null,
+      imageUrl: insertPlant.imageUrl || null
     };
     this.plants.set(id, plant);
     return plant;

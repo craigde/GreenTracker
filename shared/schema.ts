@@ -38,6 +38,7 @@ export const plants = pgTable("plants", {
   wateringFrequency: integer("watering_frequency").notNull(), // in days
   lastWatered: timestamp("last_watered").notNull(),
   notes: text("notes"),
+  imageUrl: text("image_url"),
 });
 
 export const plantSchema = createInsertSchema(plants);
