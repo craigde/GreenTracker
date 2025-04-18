@@ -84,7 +84,8 @@ function isToday(date: Date): boolean {
     date.getFullYear() === today.getFullYear();
 }
 
-// Get available locations for dropdown
+// This function is kept for backward compatibility
+// but is no longer used directly
 export const getAvailableLocations = (): string[] => [
   "Living Room",
   "Bedroom",

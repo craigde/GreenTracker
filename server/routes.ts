@@ -2,7 +2,7 @@ import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { z } from "zod";
-import { insertPlantSchema } from "@shared/schema";
+import { insertPlantSchema, insertLocationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const apiRouter = express.Router();
@@ -138,6 +138,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(history);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch watering history" });
+    }
+  });
+
+  // Get all locations
+  apiRouter.get("/locations", async (req: Request, res: Response) => {
+    try {
+      const locations = await storage.getAllLocations();
+      res.json(locations);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch locations" });
+    }
+  });
+
+  // Create a new location
+  apiRouter.post("/locations", async (req: Request, res: Response) => {
+    try {
+      const parsedData = insertLocationSchema.safeParse(req.body);
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid location data", 
+          errors: parsedData.error.format()
+        });
+      }
+
+      const newLocation = await storage.createLocation(parsedData.data);
+      res.status(201).json(newLocation);
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to create location";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Update a location
+  apiRouter.patch("/locations/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+
+      // Validate the update data
+      const updateSchema = insertLocationSchema.partial();
+      const parsedData = updateSchema.safeParse(req.body);
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid location data", 
+          errors: parsedData.error.format()
+        });
+      }
+
+      const updatedLocation = await storage.updateLocation(id, parsedData.data);
+      if (!updatedLocation) {
+        return res.status(404).json({ message: "Location not found" });
+      }
+
+      res.json(updatedLocation);
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to update location";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Delete a location
+  apiRouter.delete("/locations/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid location ID" });
+      }
+
+      const deleted = await storage.deleteLocation(id);
+      res.json({ success: true });
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to delete location";
+      res.status(400).json({ message: errorMessage });
     }
   });
 

@@ -25,7 +25,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { usePlants } from "@/hooks/use-plants";
 import { useToast } from "@/hooks/use-toast";
-import { getAvailableLocations, getWateringFrequencies } from "@/lib/plant-utils";
+import { getWateringFrequencies } from "@/lib/plant-utils";
+import { useLocations } from "@/hooks/use-locations";
 import { Loader2 } from "lucide-react";
 
 export default function AddEditPlant() {
@@ -36,6 +37,7 @@ export default function AddEditPlant() {
   const plantId = isEditing ? parseInt(id) : undefined;
 
   const { useGetPlant, createPlant, updatePlant } = usePlants();
+  const { locations, isLoading: isLoadingLocations } = useLocations();
   const { data: plantData, isLoading: isLoadingPlant } = useGetPlant(plantId || 0);
 
   // Form schema
@@ -197,11 +199,21 @@ export default function AddEditPlant() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {getAvailableLocations().map((location) => (
-                            <SelectItem key={location} value={location}>
-                              {location}
-                            </SelectItem>
-                          ))}
+                          {isLoadingLocations ? (
+                            <div className="flex justify-center p-2">
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            </div>
+                          ) : locations.length === 0 ? (
+                            <div className="p-2 text-center text-sm text-gray-500">
+                              No locations available
+                            </div>
+                          ) : (
+                            locations.map((location) => (
+                              <SelectItem key={location.id} value={location.name}>
+                                {location.name}
+                              </SelectItem>
+                            ))
+                          )}
                         </SelectContent>
                       </Select>
                       <FormMessage />
