@@ -10,6 +10,7 @@ import AddEditPlant from "@/pages/add-edit-plant";
 import Notifications from "@/pages/notifications";
 import Settings from "@/pages/settings";
 import { NavBar } from "@/components/layout/nav-bar";
+import { Header } from "@/components/layout/header";
 import { usePlants } from "@/hooks/use-plants";
 import { getPlantStatus } from "@/lib/plant-utils";
 
@@ -29,6 +30,7 @@ function AppNavBar() {
 function Router() {
   return (
     <div className="flex flex-col h-screen bg-neutral">
+      <Header />
       <main className="flex-1 overflow-y-auto pb-16">
         <Switch>
           <Route path="/" component={Dashboard} />
