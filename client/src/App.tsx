@@ -8,6 +8,7 @@ import Dashboard from "@/pages/dashboard";
 import PlantDetails from "@/pages/plant-details";
 import AddEditPlant from "@/pages/add-edit-plant";
 import Notifications from "@/pages/notifications";
+import Settings from "@/pages/settings";
 import { NavBar } from "@/components/layout/nav-bar";
 import { usePlants } from "@/hooks/use-plants";
 import { getPlantStatus } from "@/lib/plant-utils";
@@ -35,12 +36,7 @@ function Router() {
           <Route path="/plants/:id/edit" component={AddEditPlant} />
           <Route path="/plants/:id" component={PlantDetails} />
           <Route path="/notifications" component={Notifications} />
-          <Route path="/settings" component={() => (
-            <div className="p-4">
-              <h1 className="text-2xl font-bold mb-4 font-heading">Settings</h1>
-              <p className="text-gray-500">Settings will be implemented in a future version.</p>
-            </div>
-          )} />
+          <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>
       </main>

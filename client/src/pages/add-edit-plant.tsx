@@ -38,7 +38,7 @@ export default function AddEditPlant() {
 
   const { useGetPlant, createPlant, updatePlant } = usePlants();
   const { locations, isLoading: isLoadingLocations } = useLocations();
-  const { data: plantData, isLoading: isLoadingPlant } = useGetPlant(plantId || 0);
+  const { data: plantData, isLoading: isLoadingPlant } = useGetPlant(isEditing ? Number(id) : 0);
 
   // Form schema
   const formSchema = z.object({
@@ -46,7 +46,7 @@ export default function AddEditPlant() {
     species: z.string().optional(),
     location: z.string().min(1, "Location is required"),
     wateringFrequency: z.coerce.number().min(1, "Watering frequency is required"),
-    lastWatered: z.string().transform((val) => new Date(val)),
+    lastWatered: z.string(),
     notes: z.string().optional(),
   });
 
@@ -78,9 +78,15 @@ export default function AddEditPlant() {
   }, [isEditing, plantData, form]);
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // Convert string date to Date object for the API
+    const processedValues = {
+      ...values,
+      lastWatered: new Date(values.lastWatered)
+    };
+    
     if (isEditing && plantId) {
       updatePlant.mutate(
-        { id: plantId, data: values },
+        { id: plantId, data: processedValues },
         {
           onSuccess: () => {
             toast({
@@ -99,7 +105,7 @@ export default function AddEditPlant() {
         }
       );
     } else {
-      createPlant.mutate(values, {
+      createPlant.mutate(processedValues, {
         onSuccess: () => {
           toast({
             title: "Plant added",
