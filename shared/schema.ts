@@ -16,6 +16,19 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
+// Locations table
+export const locations = pgTable("locations", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  isDefault: boolean("is_default").default(false),
+});
+
+export const locationSchema = createInsertSchema(locations);
+export const insertLocationSchema = locationSchema.omit({ id: true });
+
+export type Location = typeof locations.$inferSelect;
+export type InsertLocation = z.infer<typeof insertLocationSchema>;
+
 // Plants table
 export const plants = pgTable("plants", {
   id: serial("id").primaryKey(),
