@@ -209,7 +209,6 @@ export default function Settings() {
                             variant="ghost"
                             onClick={() => handleEditLocation(location.id, location.name)}
                             className="text-gray-500"
-                            disabled={location.isDefault === true}
                           >
                             <PencilIcon className="h-4 w-4" />
                           </Button>
@@ -220,7 +219,7 @@ export default function Settings() {
                                 size="sm"
                                 variant="ghost"
                                 className="text-red-500"
-                                disabled={(location.isDefault === true) || deleteLocation.isPending}
+                                disabled={deleteLocation.isPending}
                               >
                                 {deleteLocation.isPending ? (
                                   <Loader2 className="h-4 w-4 animate-spin" />

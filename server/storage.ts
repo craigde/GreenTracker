@@ -226,22 +226,18 @@ export class MemStorage implements IStorage {
 
   async deleteLocation(id: number): Promise<boolean> {
     const location = this.locations.get(id);
-    
-    // Don't allow deleting default locations
-    if (location && location.isDefault) {
-      throw new Error("Cannot delete default locations");
+    if (!location) {
+      return false;
     }
     
     // Check if any plants are using this location
-    const locationName = location?.name;
-    if (locationName) {
-      const plantsUsingLocation = Array.from(this.plants.values()).some(
-        (plant) => plant.location === locationName
-      );
-      
-      if (plantsUsingLocation) {
-        throw new Error(`Cannot delete location '${locationName}' as it is being used by one or more plants`);
-      }
+    const locationName = location.name;
+    const plantsUsingLocation = Array.from(this.plants.values()).some(
+      (plant) => plant.location === locationName
+    );
+    
+    if (plantsUsingLocation) {
+      throw new Error(`Cannot delete location '${locationName}' as it is being used by one or more plants`);
     }
     
     return this.locations.delete(id);
