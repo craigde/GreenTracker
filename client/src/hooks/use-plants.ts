@@ -68,6 +68,29 @@ export function usePlants() {
     },
   });
   
+  // Upload an image for a plant
+  const uploadPlantImage = useMutation({
+    mutationFn: async ({ id, imageFile }: { id: number; imageFile: File }) => {
+      const formData = new FormData();
+      formData.append('image', imageFile);
+      
+      const res = await fetch(`/api/plants/${id}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!res.ok) {
+        throw new Error('Failed to upload image');
+      }
+      
+      return res.json();
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/plants"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/plants", variables.id] });
+    },
+  });
+  
   return {
     plants,
     isLoading,
@@ -77,5 +100,6 @@ export function usePlants() {
     updatePlant,
     deletePlant,
     waterPlant,
+    uploadPlantImage,
   };
 }

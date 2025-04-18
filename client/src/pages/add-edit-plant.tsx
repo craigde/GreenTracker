@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,6 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Label } from "@/components/ui/label";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -27,18 +29,22 @@ import { usePlants } from "@/hooks/use-plants";
 import { useToast } from "@/hooks/use-toast";
 import { getWateringFrequencies } from "@/lib/plant-utils";
 import { useLocations } from "@/hooks/use-locations";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, Image } from "lucide-react";
 
 export default function AddEditPlant() {
-  const { id } = useParams();
+  const params = useParams();
+  const id = params?.id;
   const [_, navigate] = useLocation();
   const { toast } = useToast();
   const isEditing = id !== "new";
-  const plantId = isEditing ? parseInt(id) : undefined;
+  const plantId = isEditing && id ? parseInt(id) : null;
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const { useGetPlant, createPlant, updatePlant } = usePlants();
+  const { useGetPlant, createPlant, updatePlant, uploadPlantImage } = usePlants();
   const { locations, isLoading: isLoadingLocations } = useLocations();
-  const { data: plantData, isLoading: isLoadingPlant } = useGetPlant(isEditing ? Number(id) : 0);
+  const { data: plantData, isLoading: isLoadingPlant } = useGetPlant(isEditing && id ? parseInt(id) : 0);
 
   // Form schema
   const formSchema = z.object({
@@ -74,8 +80,55 @@ export default function AddEditPlant() {
         lastWatered: new Date(plantData.lastWatered).toISOString().split("T")[0],
         notes: plantData.notes || "",
       });
+      
+      // Set image preview if plant has an image
+      if (plantData.imageUrl) {
+        setImagePreview(plantData.imageUrl);
+      }
     }
   }, [isEditing, plantData, form]);
+  
+  // Handle image selection
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setSelectedImage(file);
+    
+    // Create a preview URL
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+  
+  // Handle image upload
+  const handleImageUpload = async () => {
+    if (!isEditing || !plantId || !selectedImage) return;
+    
+    setIsUploading(true);
+    
+    try {
+      await uploadPlantImage.mutateAsync({
+        id: plantId,
+        imageFile: selectedImage
+      });
+      
+      toast({
+        title: "Image uploaded",
+        description: "Plant image has been uploaded successfully."
+      });
+    } catch (error) {
+      toast({
+        title: "Failed to upload image",
+        description: "Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     // Convert string date to Date object for the API
@@ -187,6 +240,57 @@ export default function AddEditPlant() {
                     </FormItem>
                   )}
                 />
+                
+                {isEditing && (
+                  <div className="space-y-4">
+                    <FormLabel>Plant Image (Optional)</FormLabel>
+                    <div className="flex flex-col items-center gap-4 sm:flex-row">
+                      <div className="flex flex-col items-center gap-2">
+                        <Avatar className="size-24 rounded-md">
+                          {imagePreview ? (
+                            <AvatarImage src={imagePreview} alt="Plant image" className="object-cover" />
+                          ) : (
+                            <AvatarFallback className="rounded-md bg-muted">
+                              <Image className="size-10 text-muted-foreground" />
+                            </AvatarFallback>
+                          )}
+                        </Avatar>
+                        <div className="text-xs text-gray-500">
+                          {imagePreview ? "Current image" : "No image"}
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 w-full">
+                        <Label htmlFor="plant-image" className="sr-only">
+                          Choose image
+                        </Label>
+                        <Input
+                          id="plant-image"
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageChange}
+                          disabled={isLoadingPlant || isUploading}
+                          className="w-full"
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={handleImageUpload}
+                          disabled={!selectedImage || isUploading || isLoadingPlant}
+                          className="flex items-center gap-2"
+                        >
+                          {isUploading ? (
+                            <Loader2 className="size-4 animate-spin" />
+                          ) : (
+                            <Upload className="size-4" />
+                          )}
+                          Upload Image
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <FormField
                   control={form.control}
