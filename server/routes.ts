@@ -1,6 +1,6 @@
 import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage as dbStorage } from "./storage";
 import { z } from "zod";
 import { insertPlantSchema, insertLocationSchema } from "@shared/schema";
 import multer from "multer";
@@ -8,12 +8,45 @@ import path from "path";
 import fs from "fs";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Configure multer for file uploads
+  const fileStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      // Ensure uploads directory exists
+      const uploadDir = path.join(process.cwd(), 'uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      // Create unique filename with timestamp and original extension
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      cb(null, 'plant-' + uniqueSuffix + ext);
+    }
+  });
+  
+  const upload = multer({ 
+    storage: fileStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB file size limit
+    fileFilter: function(req, file, cb) {
+      // Accept only image files
+      if (!file.mimetype.startsWith('image/')) {
+        return cb(new Error('Only image files are allowed'));
+      }
+      cb(null, true);
+    }
+  });
+
+  // Serve uploaded files statically
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+  
   const apiRouter = express.Router();
 
   // Get all plants
   apiRouter.get("/plants", async (req: Request, res: Response) => {
     try {
-      const plants = await storage.getAllPlants();
+      const plants = await dbStorage.getAllPlants();
       res.json(plants);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch plants" });
@@ -28,12 +61,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid plant ID" });
       }
 
-      const plant = await storage.getPlant(id);
+      const plant = await dbStorage.getPlant(id);
       if (!plant) {
         return res.status(404).json({ message: "Plant not found" });
       }
 
-      const wateringHistory = await storage.getWateringHistory(id);
+      const wateringHistory = await dbStorage.getWateringHistory(id);
       res.json({ ...plant, wateringHistory });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch plant details" });
@@ -52,7 +85,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const newPlant = await storage.createPlant(parsedData.data);
+      const newPlant = await dbStorage.createPlant(parsedData.data);
       res.status(201).json(newPlant);
     } catch (error) {
       res.status(500).json({ message: "Failed to create plant" });
@@ -78,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const updatedPlant = await storage.updatePlant(id, parsedData.data);
+      const updatedPlant = await dbStorage.updatePlant(id, parsedData.data);
       if (!updatedPlant) {
         return res.status(404).json({ message: "Plant not found" });
       }
@@ -97,7 +130,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid plant ID" });
       }
 
-      const deleted = await storage.deletePlant(id);
+      const deleted = await dbStorage.deletePlant(id);
       if (!deleted) {
         return res.status(404).json({ message: "Plant not found" });
       }
@@ -116,8 +149,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid plant ID" });
       }
 
-      const wateringEntry = await storage.waterPlant(id);
-      const updatedPlant = await storage.getPlant(id);
+      const wateringEntry = await dbStorage.waterPlant(id);
+      const updatedPlant = await dbStorage.getPlant(id);
 
       res.json({
         success: true,
@@ -137,7 +170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid plant ID" });
       }
 
-      const history = await storage.getWateringHistory(id);
+      const history = await dbStorage.getWateringHistory(id);
       res.json(history);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch watering history" });
@@ -147,7 +180,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get all locations
   apiRouter.get("/locations", async (req: Request, res: Response) => {
     try {
-      const locations = await storage.getAllLocations();
+      const locations = await dbStorage.getAllLocations();
       res.json(locations);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch locations" });
@@ -166,7 +199,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const newLocation = await storage.createLocation(parsedData.data);
+      const newLocation = await dbStorage.createLocation(parsedData.data);
       res.status(201).json(newLocation);
     } catch (error: any) {
       const errorMessage = error?.message || "Failed to create location";
@@ -193,7 +226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const updatedLocation = await storage.updateLocation(id, parsedData.data);
+      const updatedLocation = await dbStorage.updateLocation(id, parsedData.data);
       if (!updatedLocation) {
         return res.status(404).json({ message: "Location not found" });
       }
@@ -213,10 +246,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid location ID" });
       }
 
-      const deleted = await storage.deleteLocation(id);
+      const deleted = await dbStorage.deleteLocation(id);
       res.json({ success: true });
     } catch (error: any) {
       const errorMessage = error?.message || "Failed to delete location";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Upload a plant image
+  apiRouter.post("/plants/:id/upload", upload.single('image'), async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid plant ID" });
+      }
+
+      const plant = await dbStorage.getPlant(id);
+      if (!plant) {
+        return res.status(404).json({ message: "Plant not found" });
+      }
+
+      // Get uploaded file info
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ message: "No image file uploaded" });
+      }
+
+      // Create a public URL path for the image
+      const imageUrl = `/uploads/${file.filename}`;
+
+      // Update plant with image URL
+      const updatedPlant = await dbStorage.updatePlant(id, { imageUrl });
+      
+      res.json({ 
+        success: true, 
+        imageUrl,
+        plant: updatedPlant
+      });
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to upload image";
       res.status(400).json({ message: errorMessage });
     }
   });
