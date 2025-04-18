@@ -6,6 +6,7 @@ import { insertPlantSchema, insertLocationSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { sendPlantWateringNotification, sendWelcomeNotification, checkPlantsAndSendNotifications, sendPushoverNotification } from "./notifications";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for file uploads
@@ -151,6 +152,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const wateringEntry = await dbStorage.waterPlant(id);
       const updatedPlant = await dbStorage.getPlant(id);
+      
+      // Send a confirmation notification via Pushover
+      const notificationTitle = "🪴 PlantDaddy: Plant Watered";
+      const notificationMessage = `${updatedPlant?.name} has been watered successfully.`;
+      
+      // We don't need to await this, it can happen in the background
+      sendPushoverNotification(notificationTitle, notificationMessage, 0)
+        .catch((err: Error) => console.error("Failed to send watering confirmation notification:", err));
 
       res.json({
         success: true,
@@ -290,9 +299,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Notification endpoints
+  apiRouter.post("/notifications/test", async (req: Request, res: Response) => {
+    try {
+      const sent = await sendWelcomeNotification();
+      
+      if (sent) {
+        res.json({ success: true, message: "Test notification sent successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to send test notification" });
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to send test notification";
+      res.status(500).json({ success: false, message: errorMessage });
+    }
+  });
+
+  apiRouter.post("/notifications/check-plants", async (req: Request, res: Response) => {
+    try {
+      const plants = await dbStorage.getAllPlants();
+      const notificationCount = await checkPlantsAndSendNotifications(plants);
+      
+      res.json({ 
+        success: true, 
+        notificationCount,
+        message: `Sent notifications for ${notificationCount} plants that need watering`
+      });
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to check plants and send notifications";
+      res.status(500).json({ success: false, message: errorMessage });
+    }
+  });
+
+  // Send notification for a specific plant
+  apiRouter.post("/plants/:id/notify", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid plant ID" });
+      }
+
+      const plant = await dbStorage.getPlant(id);
+      if (!plant) {
+        return res.status(404).json({ message: "Plant not found" });
+      }
+
+      const sent = await sendPlantWateringNotification(plant);
+      
+      if (sent) {
+        res.json({ success: true, message: `Sent watering notification for ${plant.name}` });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to send notification" });
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to send plant notification";
+      res.status(500).json({ success: false, message: errorMessage });
+    }
+  });
+
   // Add API router to app
   app.use("/api", apiRouter);
 
   const httpServer = createServer(app);
+  
+  // Send welcome notification on startup
+  sendWelcomeNotification().then(sent => {
+    if (sent) {
+      console.log("PlantDaddy welcome notification sent successfully");
+    } else {
+      console.warn("Failed to send PlantDaddy welcome notification");
+    }
+  });
+  
   return httpServer;
 }
