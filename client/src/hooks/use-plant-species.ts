@@ -20,13 +20,11 @@ export function usePlantSpecies() {
 
   // Get a specific plant species by ID
   const getPlantSpeciesById = (id: number | null) => {
-    if (!id) return { data: undefined, isLoading: false, isError: false };
-    
     return useQuery<PlantSpecies>({
-      queryKey: ['plant-species', id],
+      queryKey: ['plant-species', id ? id : 'detail'],
       queryFn: getQueryFn<PlantSpecies>({
         on401: 'throw',
-        path: `/api/plant-species/${id}`
+        path: id ? `/api/plant-species/${id}` : '/api/plant-species/0'
       }),
       enabled: !!id
     });
