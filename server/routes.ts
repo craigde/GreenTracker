@@ -2,7 +2,7 @@ import express, { type Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage as dbStorage } from "./storage";
 import { z } from "zod";
-import { insertPlantSchema, insertLocationSchema } from "@shared/schema";
+import { insertPlantSchema, insertLocationSchema, insertPlantSpeciesSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -357,6 +357,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Plant Species Catalog routes
+  
+  // Get all plant species
+  apiRouter.get("/plant-species", async (req: Request, res: Response) => {
+    try {
+      const query = req.query.q as string;
+      let species;
+      
+      if (query) {
+        species = await dbStorage.searchPlantSpecies(query);
+      } else {
+        species = await dbStorage.getAllPlantSpecies();
+      }
+      
+      res.json(species);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch plant species" });
+    }
+  });
+  
+  // Get a specific plant species
+  apiRouter.get("/plant-species/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid plant species ID" });
+      }
+      
+      const species = await dbStorage.getPlantSpecies(id);
+      if (!species) {
+        return res.status(404).json({ message: "Plant species not found" });
+      }
+      
+      res.json(species);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch plant species details" });
+    }
+  });
+  
+  // Create a new plant species
+  apiRouter.post("/plant-species", async (req: Request, res: Response) => {
+    try {
+      const parsedData = insertPlantSpeciesSchema.safeParse(req.body);
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid plant species data", 
+          errors: parsedData.error.format() 
+        });
+      }
+      
+      const newSpecies = await dbStorage.createPlantSpecies(parsedData.data);
+      res.status(201).json(newSpecies);
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to create plant species";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+  
+  // Update a plant species
+  apiRouter.patch("/plant-species/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid plant species ID" });
+      }
+      
+      const updateSchema = insertPlantSpeciesSchema.partial();
+      const parsedData = updateSchema.safeParse(req.body);
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid plant species data", 
+          errors: parsedData.error.format() 
+        });
+      }
+      
+      const updatedSpecies = await dbStorage.updatePlantSpecies(id, parsedData.data);
+      if (!updatedSpecies) {
+        return res.status(404).json({ message: "Plant species not found" });
+      }
+      
+      res.json(updatedSpecies);
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to update plant species";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+  
+  // Delete a plant species
+  apiRouter.delete("/plant-species/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid plant species ID" });
+      }
+      
+      const deleted = await dbStorage.deletePlantSpecies(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Plant species not found" });
+      }
+      
+      res.json({ success: true });
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to delete plant species";
+      res.status(400).json({ message: errorMessage });
+    }
+  });
+  
   // Add API router to app
   app.use("/api", apiRouter);
 

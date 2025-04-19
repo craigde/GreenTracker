@@ -2,6 +2,7 @@ import {
   plants, 
   wateringHistory, 
   locations,
+  plantSpecies,
   type Plant, 
   type InsertPlant, 
   type WateringHistory, 
@@ -10,7 +11,9 @@ import {
   type InsertLocation,
   users, 
   type User, 
-  type InsertUser 
+  type InsertUser,
+  type PlantSpecies,
+  type InsertPlantSpecies
 } from "@shared/schema";
 
 export interface IStorage {
@@ -36,6 +39,15 @@ export interface IStorage {
   createLocation(location: InsertLocation): Promise<Location>;
   updateLocation(id: number, location: Partial<InsertLocation>): Promise<Location | undefined>;
   deleteLocation(id: number): Promise<boolean>;
+  
+  // Plant species catalog methods
+  getAllPlantSpecies(): Promise<PlantSpecies[]>;
+  getPlantSpecies(id: number): Promise<PlantSpecies | undefined>;
+  getPlantSpeciesByName(name: string): Promise<PlantSpecies | undefined>;
+  createPlantSpecies(species: InsertPlantSpecies): Promise<PlantSpecies>;
+  updatePlantSpecies(id: number, species: Partial<InsertPlantSpecies>): Promise<PlantSpecies | undefined>;
+  deletePlantSpecies(id: number): Promise<boolean>;
+  searchPlantSpecies(query: string): Promise<PlantSpecies[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -43,25 +55,32 @@ export class MemStorage implements IStorage {
   private plants: Map<number, Plant>;
   private wateringHistory: Map<number, WateringHistory>;
   private locations: Map<number, Location>;
+  private plantSpeciesCatalog: Map<number, PlantSpecies>;
   
   private userIdCounter: number;
   private plantIdCounter: number;
   private wateringHistoryIdCounter: number;
   private locationIdCounter: number;
+  private plantSpeciesIdCounter: number;
 
   constructor() {
     this.users = new Map();
     this.plants = new Map();
     this.wateringHistory = new Map();
     this.locations = new Map();
+    this.plantSpeciesCatalog = new Map();
     
     this.userIdCounter = 1;
     this.plantIdCounter = 1;
     this.wateringHistoryIdCounter = 1;
     this.locationIdCounter = 1;
+    this.plantSpeciesIdCounter = 1;
     
     // Set up default locations
     this.initDefaultLocations();
+    
+    // Initialize common plant species catalog
+    this.initPlantSpeciesCatalog();
   }
   
   private initDefaultLocations() {
@@ -242,6 +261,295 @@ export class MemStorage implements IStorage {
     }
     
     return this.locations.delete(id);
+  }
+  
+  // Plant species catalog methods
+  private initPlantSpeciesCatalog() {
+    // Common houseplants with care information
+    const commonPlants: InsertPlantSpecies[] = [
+      {
+        name: "Snake Plant",
+        scientificName: "Sansevieria trifasciata",
+        family: "Asparagaceae",
+        origin: "West Africa",
+        description: "A hardy plant with stiff, upright leaves that range from 6 inches to 8 feet tall. Snake plants are excellent air purifiers and can survive in very low light conditions.",
+        careLevel: "easy",
+        lightRequirements: "low to bright indirect",
+        wateringFrequency: 14, // Every two weeks
+        humidity: "low",
+        soilType: "Well-draining, sandy soil",
+        propagation: "Division or leaf cuttings",
+        toxicity: "toxic to pets",
+        commonIssues: "Overwatering leading to root rot. Brown spots may indicate too much direct sunlight.",
+        imageUrl: "/uploads/snake-plant.jpg"
+      },
+      {
+        name: "Pothos",
+        scientificName: "Epipremnum aureum",
+        family: "Araceae",
+        origin: "Southeast Asia",
+        description: "A popular trailing vine with heart-shaped leaves that can be solid green, marbled with yellow or white, or speckled with gold. Extremely adaptable and easy to grow.",
+        careLevel: "easy",
+        lightRequirements: "low to bright indirect",
+        wateringFrequency: 7, // Weekly
+        humidity: "low to medium",
+        soilType: "Standard potting mix",
+        propagation: "Stem cuttings in water or soil",
+        toxicity: "toxic to pets",
+        commonIssues: "Yellowing leaves from overwatering; brown leaf tips from low humidity or fluoride in water.",
+        imageUrl: "/uploads/pothos.jpg"
+      },
+      {
+        name: "Peace Lily",
+        scientificName: "Spathiphyllum",
+        family: "Araceae",
+        origin: "Tropical Americas",
+        description: "An elegant plant with glossy green leaves and white spathes (flowers). Known for its air-purifying qualities and ability to thrive in low light.",
+        careLevel: "easy",
+        lightRequirements: "low to medium indirect",
+        wateringFrequency: 7, // Weekly
+        humidity: "medium to high",
+        soilType: "Rich, well-draining potting mix",
+        propagation: "Division during repotting",
+        toxicity: "toxic to pets and humans",
+        commonIssues: "Drooping indicates need for water; brown leaf tips from dry air or chemicals in water.",
+        imageUrl: "/uploads/peace-lily.jpg"
+      },
+      {
+        name: "ZZ Plant",
+        scientificName: "Zamioculcas zamiifolia",
+        family: "Araceae",
+        origin: "Eastern Africa",
+        description: "A striking plant with glossy, dark green leaves arranged on stems in a herringbone pattern. Extremely drought-tolerant and can handle low light conditions.",
+        careLevel: "easy",
+        lightRequirements: "low to bright indirect",
+        wateringFrequency: 21, // Every three weeks
+        humidity: "low",
+        soilType: "Well-draining potting mix",
+        propagation: "Leaf cuttings or division",
+        toxicity: "toxic to pets and humans",
+        commonIssues: "Yellowing leaves from overwatering; can go months without water.",
+        imageUrl: "/uploads/zz-plant.jpg"
+      },
+      {
+        name: "Spider Plant",
+        scientificName: "Chlorophytum comosum",
+        family: "Asparagaceae",
+        origin: "South Africa",
+        description: "A classic houseplant with arching green and white striped leaves. Produces baby plantlets that hang from long stems, resembling spiders.",
+        careLevel: "easy",
+        lightRequirements: "medium to bright indirect",
+        wateringFrequency: 7, // Weekly
+        humidity: "medium",
+        soilType: "Well-draining potting mix",
+        propagation: "Plantlets/offsets",
+        toxicity: "non-toxic",
+        commonIssues: "Brown leaf tips from fluoride in water; avoid overwatering.",
+        imageUrl: "/uploads/spider-plant.jpg"
+      },
+      {
+        name: "Fiddle Leaf Fig",
+        scientificName: "Ficus lyrata",
+        family: "Moraceae",
+        origin: "Western Africa",
+        description: "A popular indoor tree with large, violin-shaped leaves. Can grow up to 10 feet tall indoors and makes a striking statement piece.",
+        careLevel: "moderate",
+        lightRequirements: "bright indirect",
+        wateringFrequency: 10, // Every 10 days
+        humidity: "medium to high",
+        soilType: "Well-draining potting mix rich in organic matter",
+        propagation: "Stem cuttings or air layering",
+        toxicity: "toxic to pets",
+        commonIssues: "Brown spots from overwatering; leaf drop from inconsistent care or drafts.",
+        imageUrl: "/uploads/fiddle-leaf-fig.jpg"
+      },
+      {
+        name: "Monstera Deliciosa",
+        scientificName: "Monstera deliciosa",
+        family: "Araceae",
+        origin: "Central America",
+        description: "Known for its large, glossy, perforated leaves, this tropical plant has become an icon of interior design. The holes in the leaves are called fenestrations.",
+        careLevel: "moderate",
+        lightRequirements: "medium to bright indirect",
+        wateringFrequency: 7, // Weekly
+        humidity: "medium to high",
+        soilType: "Rich, well-draining potting mix",
+        propagation: "Stem cuttings with nodes",
+        toxicity: "toxic to pets",
+        commonIssues: "Yellowing leaves from overwatering; lack of fenestrations from insufficient light.",
+        imageUrl: "/uploads/monstera.jpg"
+      },
+      {
+        name: "Rubber Plant",
+        scientificName: "Ficus elastica",
+        family: "Moraceae",
+        origin: "Southeast Asia",
+        description: "A popular houseplant with thick, glossy leaves that range from dark green to burgundy. Can grow into a tall indoor tree with proper care.",
+        careLevel: "easy",
+        lightRequirements: "medium to bright indirect",
+        wateringFrequency: 7, // Weekly
+        humidity: "medium",
+        soilType: "Well-draining potting mix",
+        propagation: "Stem cuttings or air layering",
+        toxicity: "toxic to pets",
+        commonIssues: "Leaf drop from overwatering or cold drafts; dusty leaves reduce growth.",
+        imageUrl: "/uploads/rubber-plant.jpg"
+      },
+      {
+        name: "Aloe Vera",
+        scientificName: "Aloe barbadensis miller",
+        family: "Asphodelaceae",
+        origin: "Arabian Peninsula",
+        description: "A succulent plant species with thick, fleshy leaves containing a gel known for its medicinal properties, particularly for treating burns and skin conditions.",
+        careLevel: "easy",
+        lightRequirements: "bright direct to indirect",
+        wateringFrequency: 21, // Every three weeks
+        humidity: "low",
+        soilType: "Cactus or succulent mix",
+        propagation: "Offsets/pups",
+        toxicity: "toxic to pets",
+        commonIssues: "Thin, curling leaves indicate underwatering; soft, mushy leaves indicate overwatering.",
+        imageUrl: "/uploads/aloe-vera.jpg"
+      },
+      {
+        name: "Boston Fern",
+        scientificName: "Nephrolepis exaltata",
+        family: "Nephrolepidaceae",
+        origin: "Tropical regions worldwide",
+        description: "A classic fern with feathery, arching fronds that can grow up to 3 feet long. Adds a touch of woodland charm to any indoor space.",
+        careLevel: "moderate",
+        lightRequirements: "medium to bright indirect",
+        wateringFrequency: 5, // Every 5 days
+        humidity: "high",
+        soilType: "Rich, well-draining potting mix",
+        propagation: "Division or spores",
+        toxicity: "non-toxic",
+        commonIssues: "Brown fronds from low humidity; yellowing from overwatering.",
+        imageUrl: "/uploads/boston-fern.jpg"
+      },
+      {
+        name: "Chinese Money Plant",
+        scientificName: "Pilea peperomioides",
+        family: "Urticaceae",
+        origin: "Southern China",
+        description: "A charming plant with round, coin-shaped leaves on long stems. Also known as UFO plant or pancake plant due to its distinctive leaf shape.",
+        careLevel: "easy",
+        lightRequirements: "medium indirect",
+        wateringFrequency: 7, // Weekly
+        humidity: "low to medium",
+        soilType: "Well-draining potting mix",
+        propagation: "Offsets/pups",
+        toxicity: "non-toxic",
+        commonIssues: "Curling leaves from too much light; leggy growth from insufficient light.",
+        imageUrl: "/uploads/chinese-money-plant.jpg"
+      },
+      {
+        name: "Calathea",
+        scientificName: "Calathea spp.",
+        family: "Marantaceae",
+        origin: "Tropical Americas",
+        description: "Known for their dramatic foliage with intricate patterns and purple undersides. These prayer plants move their leaves up at night and down during the day.",
+        careLevel: "difficult",
+        lightRequirements: "medium indirect",
+        wateringFrequency: 7, // Weekly
+        humidity: "high",
+        soilType: "Rich, well-draining potting mix",
+        propagation: "Division during repotting",
+        toxicity: "non-toxic",
+        commonIssues: "Crispy edges from low humidity; brown spots from tap water minerals; curling from underwatering.",
+        imageUrl: "/uploads/calathea.jpg"
+      }
+    ];
+    
+    // Add plant species to the catalog
+    for (const species of commonPlants) {
+      const id = this.plantSpeciesIdCounter++;
+      this.plantSpeciesCatalog.set(id, { 
+        ...species, 
+        id,
+        family: species.family || null,
+        origin: species.origin || null,
+        humidity: species.humidity || null,
+        soilType: species.soilType || null,
+        propagation: species.propagation || null,
+        toxicity: species.toxicity || null,
+        commonIssues: species.commonIssues || null,
+        imageUrl: species.imageUrl || null
+      });
+    }
+  }
+  
+  async getAllPlantSpecies(): Promise<PlantSpecies[]> {
+    return Array.from(this.plantSpeciesCatalog.values());
+  }
+
+  async getPlantSpecies(id: number): Promise<PlantSpecies | undefined> {
+    return this.plantSpeciesCatalog.get(id);
+  }
+
+  async getPlantSpeciesByName(name: string): Promise<PlantSpecies | undefined> {
+    return Array.from(this.plantSpeciesCatalog.values()).find(
+      (species) => species.name.toLowerCase() === name.toLowerCase()
+    );
+  }
+
+  async createPlantSpecies(insertSpecies: InsertPlantSpecies): Promise<PlantSpecies> {
+    // Check if a species with the same name already exists
+    const existingSpecies = await this.getPlantSpeciesByName(insertSpecies.name);
+    if (existingSpecies) {
+      throw new Error(`Plant species '${insertSpecies.name}' already exists`);
+    }
+    
+    const id = this.plantSpeciesIdCounter++;
+    const species: PlantSpecies = { 
+      ...insertSpecies, 
+      id
+    };
+    this.plantSpeciesCatalog.set(id, species);
+    return species;
+  }
+
+  async updatePlantSpecies(id: number, speciesUpdate: Partial<InsertPlantSpecies>): Promise<PlantSpecies | undefined> {
+    const existingSpecies = this.plantSpeciesCatalog.get(id);
+    if (!existingSpecies) {
+      return undefined;
+    }
+    
+    // If name is being updated, check for duplicates
+    if (speciesUpdate.name && speciesUpdate.name !== existingSpecies.name) {
+      const nameExists = Array.from(this.plantSpeciesCatalog.values()).some(
+        (species) => species.id !== id && species.name.toLowerCase() === speciesUpdate.name!.toLowerCase()
+      );
+      
+      if (nameExists) {
+        throw new Error(`Plant species with name '${speciesUpdate.name}' already exists`);
+      }
+    }
+    
+    const updatedSpecies: PlantSpecies = { ...existingSpecies, ...speciesUpdate };
+    this.plantSpeciesCatalog.set(id, updatedSpecies);
+    return updatedSpecies;
+  }
+
+  async deletePlantSpecies(id: number): Promise<boolean> {
+    return this.plantSpeciesCatalog.delete(id);
+  }
+
+  async searchPlantSpecies(query: string): Promise<PlantSpecies[]> {
+    if (!query || query.trim() === '') {
+      return this.getAllPlantSpecies();
+    }
+    
+    const lowerQuery = query.toLowerCase();
+    return Array.from(this.plantSpeciesCatalog.values()).filter((species) => {
+      return (
+        species.name.toLowerCase().includes(lowerQuery) ||
+        species.scientificName.toLowerCase().includes(lowerQuery) ||
+        (species.description && species.description.toLowerCase().includes(lowerQuery)) ||
+        (species.careLevel && species.careLevel.toLowerCase().includes(lowerQuery)) ||
+        (species.family && species.family.toLowerCase().includes(lowerQuery))
+      );
+    });
   }
 }
 

@@ -59,3 +59,28 @@ export const insertWateringHistorySchema = wateringHistorySchema.omit({ id: true
 
 export type WateringHistory = typeof wateringHistory.$inferSelect;
 export type InsertWateringHistory = z.infer<typeof insertWateringHistorySchema>;
+
+// Plant species catalog
+export const plantSpecies = pgTable("plant_species", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  scientificName: text("scientific_name").notNull(),
+  family: text("family"),
+  origin: text("origin"),
+  description: text("description").notNull(),
+  careLevel: text("care_level").notNull(), // "easy", "moderate", "difficult"
+  lightRequirements: text("light_requirements").notNull(),
+  wateringFrequency: integer("watering_frequency").notNull(), // recommended watering in days
+  humidity: text("humidity"), // "low", "medium", "high"
+  soilType: text("soil_type"),
+  propagation: text("propagation"),
+  toxicity: text("toxicity"), // "non-toxic", "toxic to pets", "toxic to humans"
+  commonIssues: text("common_issues"),
+  imageUrl: text("image_url"),
+});
+
+export const plantSpeciesSchema = createInsertSchema(plantSpecies);
+export const insertPlantSpeciesSchema = plantSpeciesSchema.omit({ id: true });
+
+export type PlantSpecies = typeof plantSpecies.$inferSelect;
+export type InsertPlantSpecies = z.infer<typeof insertPlantSpeciesSchema>;
