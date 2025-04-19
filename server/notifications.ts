@@ -19,9 +19,9 @@ export async function sendPushoverNotification(
   url?: string,
   urlTitle?: string
 ): Promise<boolean> {
-  // Debug: Print token length (not the actual token for security)
-  console.log(`PUSHOVER_APP_TOKEN length: ${PUSHOVER_APP_TOKEN?.length || 0}`);
-  console.log(`PUSHOVER_USER_KEY length: ${PUSHOVER_USER_KEY?.length || 0}`);
+  // Debug: Print token length and first/last characters (partial for security)
+  console.log(`PUSHOVER_APP_TOKEN: ${PUSHOVER_APP_TOKEN?.substr(0, 3)}...${PUSHOVER_APP_TOKEN?.substr(-3) || ''} (${PUSHOVER_APP_TOKEN?.length || 0} chars)`);
+  console.log(`PUSHOVER_USER_KEY: ${PUSHOVER_USER_KEY?.substr(0, 3)}...${PUSHOVER_USER_KEY?.substr(-3) || ''} (${PUSHOVER_USER_KEY?.length || 0} chars)`);
   
   if (!PUSHOVER_APP_TOKEN || !PUSHOVER_USER_KEY) {
     console.warn('Cannot send notification: Pushover credentials missing');
