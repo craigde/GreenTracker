@@ -49,7 +49,7 @@ export default function PlantExplorer() {
         species.scientificName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (species.description && species.description.toLowerCase().includes(searchQuery.toLowerCase()));
       
-      const matchesCareLevel = !careLevel || species.careLevel === careLevel;
+      const matchesCareLevel = !careLevel || careLevel === 'all' || species.careLevel === careLevel;
       
       return matchesSearch && matchesCareLevel;
     });
@@ -67,7 +67,7 @@ export default function PlantExplorer() {
   // Reset filters
   const resetFilters = () => {
     setSearchQuery('');
-    setCareLevel('');
+    setCareLevel('all');
   };
   
   // Format care level text
@@ -124,7 +124,7 @@ export default function PlantExplorer() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Levels</SelectItem>
+                  <SelectItem value="all">All Levels</SelectItem>
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="moderate">Moderate</SelectItem>
                   <SelectItem value="difficult">Difficult</SelectItem>
@@ -132,7 +132,7 @@ export default function PlantExplorer() {
               </Select>
             </div>
             
-            {(searchQuery || careLevel) && (
+            {(searchQuery || (careLevel && careLevel !== 'all')) && (
               <Button variant="ghost" size="sm" onClick={resetFilters}>
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Reset
