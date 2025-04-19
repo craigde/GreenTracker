@@ -20,18 +20,27 @@ function getDateString(date: Date): string {
 
 // Check if today's check has already been done
 function hasCheckedToday(): boolean {
-  if (!lastCheckDate) return false;
-  const today = getDateString(new Date());
-  const lastCheck = getDateString(lastCheckDate);
-  return today === lastCheck;
+  // DEBUG: For testing purposes, always return false to force a check
+  return false;
+  
+  // NORMAL CODE (will use after testing):
+  // if (!lastCheckDate) return false;
+  // const today = getDateString(new Date());
+  // const lastCheck = getDateString(lastCheckDate);
+  // return today === lastCheck;
 }
 
 // Determine if it's time to check (8:00 AM by default)
+// For debugging purposes, this always returns true to test notifications
 function isCheckTime(): boolean {
-  const now = new Date();
-  return now.getHours() === DEFAULT_CHECK_HOUR && 
-         now.getMinutes() >= DEFAULT_CHECK_MINUTE && 
-         now.getMinutes() < DEFAULT_CHECK_MINUTE + 5; // 5 minute window
+  // DEBUG: Always true for testing
+  return true;
+  
+  // NORMAL CODE (will use this after testing):
+  // const now = new Date();
+  // return now.getHours() === DEFAULT_CHECK_HOUR && 
+  //        now.getMinutes() >= DEFAULT_CHECK_MINUTE && 
+  //        now.getMinutes() < DEFAULT_CHECK_MINUTE + 5; // 5 minute window
 }
 
 // Check plants and send notifications if needed
@@ -79,10 +88,10 @@ export function startScheduler() {
   // Run immediately once
   checkPlantsTask();
   
-  // Then set up the interval to run every 15 minutes
+  // Then set up the interval to run every minute for testing
   if (!schedulerInterval) {
-    schedulerInterval = setInterval(checkPlantsTask, 15 * ONE_MINUTE);
-    console.log('Scheduler started. Will check plants every 15 minutes.');
+    schedulerInterval = setInterval(checkPlantsTask, 1 * ONE_MINUTE);
+    console.log('Scheduler started. Will check plants every minute for testing.');
   }
 }
 
