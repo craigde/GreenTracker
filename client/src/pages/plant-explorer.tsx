@@ -368,7 +368,7 @@ export default function PlantExplorer() {
               <Button 
                 onClick={() => {
                   setSelectedSpeciesId(null);
-                  navigate('/add-plant', { 
+                  navigate('/plants/new', { 
                     state: { 
                       recommendedPlant: {
                         name: selectedSpecies.name,

@@ -34,13 +34,17 @@ import { Loader2, Upload, Image } from "lucide-react";
 export default function AddEditPlant() {
   const params = useParams();
   const id = params?.id;
-  const [_, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const { toast } = useToast();
   const isEditing = id !== "new";
   const plantId = isEditing && id ? parseInt(id) : null;
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // Access recommended plant data from location state (if any)
+  const locationState = typeof window !== 'undefined' ? window.history.state : null;
+  const recommendedPlant = locationState?.state?.recommendedPlant;
 
   const { useGetPlant, createPlant, updatePlant, uploadPlantImage } = usePlants();
   const { locations, isLoading: isLoadingLocations } = useLocations();
@@ -60,10 +64,10 @@ export default function AddEditPlant() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      name: "",
-      species: "",
+      name: recommendedPlant?.name || "",
+      species: recommendedPlant?.species || "",
       location: "",
-      wateringFrequency: 7,
+      wateringFrequency: recommendedPlant?.wateringFrequency || 7,
       lastWatered: new Date().toISOString().split("T")[0],
       notes: "",
     },
@@ -87,6 +91,24 @@ export default function AddEditPlant() {
       }
     }
   }, [isEditing, plantData, form]);
+  
+  // Update form with recommended plant data when locations are loaded
+  useEffect(() => {
+    if (!isEditing && !isLoadingLocations && locations && locations.length > 0 && recommendedPlant) {
+      form.reset({
+        ...form.getValues(),
+        name: recommendedPlant.name || form.getValues().name,
+        species: recommendedPlant.species || form.getValues().species,
+        location: locations[0].name,
+        wateringFrequency: recommendedPlant.wateringFrequency || form.getValues().wateringFrequency,
+      });
+    } else if (!isEditing && !isLoadingLocations && locations && locations.length > 0) {
+      form.reset({
+        ...form.getValues(),
+        location: locations[0].name,
+      });
+    }
+  }, [isEditing, isLoadingLocations, locations, recommendedPlant, form]);
   
   // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
