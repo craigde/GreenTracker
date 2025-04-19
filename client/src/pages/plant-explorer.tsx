@@ -211,12 +211,12 @@ export default function PlantExplorer() {
                 <div className="md:w-2/5">
                   <div className="rounded-lg overflow-hidden border">
                     <img 
-                      src={selectedSpecies.imageUrl || '/uploads/plant-silhouette.png'} 
+                      src={selectedSpecies.imageUrl || '/uploads/plant-silhouette.svg'} 
                       alt={selectedSpecies.name} 
                       className="w-full h-[300px] object-cover"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
-                        target.src = '/uploads/plant-silhouette.png';
+                        target.src = '/uploads/plant-silhouette.svg';
                       }}
                     />
                   </div>
