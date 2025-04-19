@@ -193,6 +193,10 @@ export default function PlantExplorer() {
       <Dialog open={!!selectedSpeciesId} onOpenChange={(open) => !open && setSelectedSpeciesId(null)}>
         {isLoadingSelected ? (
           <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="sr-only">Loading Plant Details</DialogTitle>
+              <DialogDescription className="sr-only">Please wait while we load plant information</DialogDescription>
+            </DialogHeader>
             <div className="py-8 flex justify-center">
               <div className="flex flex-col items-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mb-4"></div>
