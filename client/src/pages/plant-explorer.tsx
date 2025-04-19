@@ -32,7 +32,7 @@ export default function PlantExplorer() {
   // Get plant species data with search query
   const { getPlantSpecies, getPlantSpeciesById } = usePlantSpecies();
   const { data: plantSpecies, isLoading, isError } = getPlantSpecies();
-  const { data: selectedSpecies } = getPlantSpeciesById(selectedSpeciesId);
+  const { data: selectedSpecies, isLoading: isLoadingSelected } = getPlantSpeciesById(selectedSpeciesId);
   
   // Handle species selection
   const handleSelectSpecies = (speciesId: number) => {
@@ -191,7 +191,16 @@ export default function PlantExplorer() {
 
       {/* Plant Details Dialog */}
       <Dialog open={!!selectedSpeciesId} onOpenChange={(open) => !open && setSelectedSpeciesId(null)}>
-        {selectedSpecies && (
+        {isLoadingSelected ? (
+          <DialogContent>
+            <div className="py-8 flex justify-center">
+              <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mb-4"></div>
+                <p className="text-gray-500">Loading plant details...</p>
+              </div>
+            </div>
+          </DialogContent>
+        ) : selectedSpecies && (
           <DialogContent className="sm:max-w-3xl h-[90vh] block">
             <DialogHeader>
               <DialogTitle className="text-2xl flex items-center">
