@@ -43,22 +43,33 @@ export default function AddEditPlant() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
-  // Access recommended plant data from location state (if any)
-  type LocationState = {
-    recommendedPlant?: {
-      name: string;
-      species: string;
-      wateringFrequency: number;
+  // Access recommended plant data from URL query parameters
+  const [searchParams] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return new URLSearchParams(window.location.search);
     }
-  };
+    return new URLSearchParams();
+  });
   
-  const locationState = useLocationState<LocationState>();
-  const recommendedPlant = locationState?.recommendedPlant;
+  const recommendedPlant = React.useMemo(() => {
+    const name = searchParams.get('name');
+    const species = searchParams.get('species');
+    const wateringFrequencyStr = searchParams.get('wateringFrequency');
+    
+    if (name || species || wateringFrequencyStr) {
+      return {
+        name: name || '',
+        species: species || '',
+        wateringFrequency: wateringFrequencyStr ? parseInt(wateringFrequencyStr, 10) : 7
+      };
+    }
+    return undefined;
+  }, [searchParams]);
   
   // Debug state
   useEffect(() => {
     if (recommendedPlant) {
-      console.log("Recommended plant data:", recommendedPlant);
+      console.log("Recommended plant data from URL:", recommendedPlant);
     }
   }, [recommendedPlant]);
 

@@ -368,15 +368,13 @@ export default function PlantExplorer() {
               <Button 
                 onClick={() => {
                   setSelectedSpeciesId(null);
-                  navigate('/plants/new', { 
-                    state: { 
-                      recommendedPlant: {
-                        name: selectedSpecies.name,
-                        species: selectedSpecies.scientificName,
-                        wateringFrequency: selectedSpecies.wateringFrequency,
-                      } 
-                    } 
+                  // Pass as URL parameters instead of state
+                  const params = new URLSearchParams({
+                    name: selectedSpecies.name,
+                    species: selectedSpecies.scientificName,
+                    wateringFrequency: selectedSpecies.wateringFrequency.toString()
                   });
+                  navigate(`/plants/new?${params.toString()}`);
                 }}
               >
                 <Leaf className="mr-2 h-4 w-4" />
