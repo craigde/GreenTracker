@@ -503,7 +503,15 @@ export class MemStorage implements IStorage {
     const id = this.plantSpeciesIdCounter++;
     const species: PlantSpecies = { 
       ...insertSpecies, 
-      id
+      id,
+      family: insertSpecies.family || null,
+      origin: insertSpecies.origin || null,
+      humidity: insertSpecies.humidity || null,
+      soilType: insertSpecies.soilType || null,
+      propagation: insertSpecies.propagation || null,
+      toxicity: insertSpecies.toxicity || null,
+      commonIssues: insertSpecies.commonIssues || null,
+      imageUrl: insertSpecies.imageUrl || null
     };
     this.plantSpeciesCatalog.set(id, species);
     return species;

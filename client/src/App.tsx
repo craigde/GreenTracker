@@ -9,6 +9,7 @@ import PlantDetails from "@/pages/plant-details";
 import AddEditPlant from "@/pages/add-edit-plant";
 import Notifications from "@/pages/notifications";
 import Settings from "@/pages/settings";
+import PlantExplorer from "@/pages/plant-explorer";
 import { NavBar } from "@/components/layout/nav-bar";
 import { Header } from "@/components/layout/header";
 import { usePlants } from "@/hooks/use-plants";
@@ -37,6 +38,7 @@ function Router() {
           <Route path="/plants/new" component={AddEditPlant} />
           <Route path="/plants/:id/edit" component={AddEditPlant} />
           <Route path="/plants/:id" component={PlantDetails} />
+          <Route path="/plant-explorer" component={PlantExplorer} />
           <Route path="/notifications" component={Notifications} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
