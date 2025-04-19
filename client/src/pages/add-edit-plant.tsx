@@ -29,12 +29,13 @@ import { usePlants } from "@/hooks/use-plants";
 import { useToast } from "@/hooks/use-toast";
 import { getWateringFrequencies } from "@/lib/plant-utils";
 import { useLocations } from "@/hooks/use-locations";
+import { useLocationState } from "@/hooks/use-location-state";
 import { Loader2, Upload, Image } from "lucide-react";
 
 export default function AddEditPlant() {
   const params = useParams();
   const id = params?.id;
-  const [location, navigate] = useLocation();
+  const [_, navigate] = useLocation();
   const { toast } = useToast();
   const isEditing = id !== "new";
   const plantId = isEditing && id ? parseInt(id) : null;
@@ -43,8 +44,23 @@ export default function AddEditPlant() {
   const [isUploading, setIsUploading] = useState(false);
   
   // Access recommended plant data from location state (if any)
-  const locationState = typeof window !== 'undefined' ? window.history.state : null;
-  const recommendedPlant = locationState?.state?.recommendedPlant;
+  type LocationState = {
+    recommendedPlant?: {
+      name: string;
+      species: string;
+      wateringFrequency: number;
+    }
+  };
+  
+  const locationState = useLocationState<LocationState>();
+  const recommendedPlant = locationState?.recommendedPlant;
+  
+  // Debug state
+  useEffect(() => {
+    if (recommendedPlant) {
+      console.log("Recommended plant data:", recommendedPlant);
+    }
+  }, [recommendedPlant]);
 
   const { useGetPlant, createPlant, updatePlant, uploadPlantImage } = usePlants();
   const { locations, isLoading: isLoadingLocations } = useLocations();
