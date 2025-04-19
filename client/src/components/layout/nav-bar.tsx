@@ -18,7 +18,7 @@ export function NavBar({ notificationCount }: NavBarProps) {
     <nav className="bg-white fixed bottom-0 left-0 right-0 h-16 shadow-lg flex justify-around items-center">
       <button
         onClick={() => navigateTo("/")}
-        className={`flex flex-col items-center justify-center w-1/3 h-full ${
+        className={`flex flex-col items-center justify-center w-1/4 h-full ${
           isActive("/") ? "text-primary" : "text-gray-500"
         }`}
       >
@@ -27,13 +27,23 @@ export function NavBar({ notificationCount }: NavBarProps) {
       </button>
 
       <button
+        onClick={() => navigateTo("/plant-explorer")}
+        className={`flex flex-col items-center justify-center w-1/4 h-full ${
+          isActive("/plant-explorer") ? "text-primary" : "text-gray-500"
+        }`}
+      >
+        <span className="material-icons">eco</span>
+        <span className="text-xs mt-1">Explorer</span>
+      </button>
+
+      <button
         onClick={() => navigateTo("/notifications")}
-        className={`flex flex-col items-center justify-center w-1/3 h-full ${
+        className={`flex flex-col items-center justify-center w-1/4 h-full ${
           isActive("/notifications") ? "text-primary" : "text-gray-500"
         } relative`}
       >
         <span className="material-icons">notifications</span>
-        <span className="text-xs mt-1">Notifications</span>
+        <span className="text-xs mt-1">Alerts</span>
         {notificationCount > 0 && (
           <span className="absolute top-[-5px] right-[-5px] h-5 w-5 rounded-full bg-status-overdue text-white flex items-center justify-center text-xs font-bold">
             {notificationCount}
@@ -43,7 +53,7 @@ export function NavBar({ notificationCount }: NavBarProps) {
 
       <button
         onClick={() => navigateTo("/settings")}
-        className={`flex flex-col items-center justify-center w-1/3 h-full ${
+        className={`flex flex-col items-center justify-center w-1/4 h-full ${
           isActive("/settings") ? "text-primary" : "text-gray-500"
         }`}
       >

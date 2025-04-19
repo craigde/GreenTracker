@@ -40,16 +40,20 @@ export default function PlantExplorer() {
   };
   
   // Filter plant species based on search query and filters
-  const filteredSpecies = plantSpecies?.filter(species => {
-    const matchesSearch = !searchQuery || 
-      species.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      species.scientificName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (species.description && species.description.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredSpecies = React.useMemo(() => {
+    if (!plantSpecies) return [];
     
-    const matchesCareLevel = !careLevel || species.careLevel === careLevel;
-    
-    return matchesSearch && matchesCareLevel;
-  });
+    return plantSpecies.filter((species: PlantSpecies) => {
+      const matchesSearch = !searchQuery || 
+        species.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        species.scientificName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (species.description && species.description.toLowerCase().includes(searchQuery.toLowerCase()));
+      
+      const matchesCareLevel = !careLevel || species.careLevel === careLevel;
+      
+      return matchesSearch && matchesCareLevel;
+    });
+  }, [plantSpecies, searchQuery, careLevel]);
   
   // Calculate watering frequency text
   const getWateringText = (frequency: number): string => {

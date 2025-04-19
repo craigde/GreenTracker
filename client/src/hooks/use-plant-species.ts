@@ -5,40 +5,44 @@ import type { PlantSpecies } from '@shared/schema';
 export function usePlantSpecies() {
   // Get all plant species with optional search query
   const getPlantSpecies = (query?: string) => {
+    const path = query 
+      ? `/api/plant-species?q=${encodeURIComponent(query)}` 
+      : '/api/plant-species';
+    
     return useQuery<PlantSpecies[]>({
       queryKey: query ? ['plant-species', query] : ['plant-species'],
       queryFn: getQueryFn<PlantSpecies[]>({
         on401: 'throw',
-        path: query 
-          ? `/api/plant-species?q=${encodeURIComponent(query)}` 
-          : '/api/plant-species'
+        path
       })
     });
   };
 
   // Get a specific plant species by ID
   const getPlantSpeciesById = (id: number | null) => {
+    if (!id) return { data: undefined, isLoading: false, isError: false };
+    
     return useQuery<PlantSpecies>({
       queryKey: ['plant-species', id],
       queryFn: getQueryFn<PlantSpecies>({
         on401: 'throw',
         path: `/api/plant-species/${id}`
       }),
-      enabled: !!id // Only run the query if ID is provided
+      enabled: !!id
     });
   };
 
   // Add a new plant species
   const addPlantSpecies = useMutation({
     mutationFn: async (newSpecies: Omit<PlantSpecies, 'id'>) => {
-      const response = await apiRequest('/api/plant-species', {
+      return apiRequest({
         method: 'POST',
         body: JSON.stringify(newSpecies),
         headers: {
           'Content-Type': 'application/json',
         },
+        url: '/api/plant-species'
       });
-      return response as PlantSpecies;
     },
     onSuccess: () => {
       // Invalidate the plant species cache to trigger a refetch
@@ -49,14 +53,14 @@ export function usePlantSpecies() {
   // Update a plant species
   const updatePlantSpecies = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<PlantSpecies> }) => {
-      const response = await apiRequest(`/api/plant-species/${id}`, {
+      return apiRequest({
         method: 'PATCH',
         body: JSON.stringify(data),
         headers: {
           'Content-Type': 'application/json',
         },
+        url: `/api/plant-species/${id}`
       });
-      return response as PlantSpecies;
     },
     onSuccess: (_data, variables) => {
       // Invalidate the individual plant species and the list
@@ -68,10 +72,10 @@ export function usePlantSpecies() {
   // Delete a plant species
   const deletePlantSpecies = useMutation({
     mutationFn: async (id: number) => {
-      const response = await apiRequest(`/api/plant-species/${id}`, {
+      return apiRequest({
         method: 'DELETE',
+        url: `/api/plant-species/${id}`
       });
-      return response as boolean;
     },
     onSuccess: () => {
       // Invalidate the plant species cache after deletion

@@ -8,28 +8,53 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
+  urlOrOptions: string | (RequestInit & { url?: string }),
+  options?: RequestInit,
+): Promise<any> {
+  let url: string;
+  let fetchOptions: RequestInit;
+
+  if (typeof urlOrOptions === 'string') {
+    url = urlOrOptions;
+    fetchOptions = options || {};
+  } else {
+    // Extract url from the options and remove it from fetchOptions
+    const { url: optionsUrl, ...restOptions } = urlOrOptions;
+    url = optionsUrl || '';
+    fetchOptions = restOptions;
+  }
+
   const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    ...fetchOptions,
+    headers: {
+      ...fetchOptions.headers,
+    },
     credentials: "include",
   });
 
   await throwIfResNotOk(res);
-  return res;
+  
+  // Try to parse as JSON, fallback to text if it fails
+  try {
+    const data = await res.json();
+    return data;
+  } catch (e) {
+    // If the response is not JSON, just return the raw response
+    return res;
+  }
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
+  path?: string;
 }) => QueryFunction<T> =
-  ({ on401: unauthorizedBehavior }) =>
+  ({ on401: unauthorizedBehavior, path }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
+    // Use provided path or first query key as URL
+    const url = path || queryKey[0] as string;
+    
+    const res = await fetch(url, {
       credentials: "include",
     });
 
