@@ -281,7 +281,7 @@ export class MemStorage implements IStorage {
         propagation: "Division or leaf cuttings",
         toxicity: "toxic to pets",
         commonIssues: "Overwatering leading to root rot. Brown spots may indicate too much direct sunlight.",
-        imageUrl: "/uploads/snake-plant.jpg"
+        imageUrl: "/uploads/snake-plant.svg"
       },
       {
         name: "Jade Plant",
@@ -297,7 +297,7 @@ export class MemStorage implements IStorage {
         propagation: "Leaf or stem cuttings",
         toxicity: "toxic to pets",
         commonIssues: "Shriveled leaves from underwatering; root rot from overwatering; dropping leaves from cold.",
-        imageUrl: "/uploads/jade-plant.jpg"
+        imageUrl: "/uploads/jade-plant.svg"
       },
       {
         name: "Pothos",
@@ -313,7 +313,7 @@ export class MemStorage implements IStorage {
         propagation: "Stem cuttings in water or soil",
         toxicity: "toxic to pets",
         commonIssues: "Yellowing leaves from overwatering; brown leaf tips from low humidity or fluoride in water.",
-        imageUrl: "/uploads/pothos.jpg"
+        imageUrl: "/uploads/pothos.svg"
       },
       {
         name: "Peace Lily",
@@ -393,7 +393,7 @@ export class MemStorage implements IStorage {
         propagation: "Stem cuttings with nodes",
         toxicity: "toxic to pets",
         commonIssues: "Yellowing leaves from overwatering; lack of fenestrations from insufficient light.",
-        imageUrl: "/uploads/monstera.jpg"
+        imageUrl: "/uploads/monstera.svg"
       },
       {
         name: "Rubber Plant",
