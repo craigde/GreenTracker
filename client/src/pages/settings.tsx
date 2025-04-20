@@ -141,8 +141,8 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">Locations</h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <h2 className="text-lg font-semibold mb-3 font-heading">Locations</h2>
+        <p className="text-sm text-muted-foreground mb-4">
           Manage the locations where you keep your plants.
         </p>
 
@@ -175,12 +175,12 @@ export default function Settings() {
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 </div>
               ) : locations.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No custom locations added yet.</p>
+                <p className="text-muted-foreground text-center py-4">No custom locations added yet.</p>
               ) : (
                 locations.map((location) => (
                   <div
                     key={location.id}
-                    className="flex items-center justify-between py-2 px-3 border-b border-gray-100 last:border-0"
+                    className="flex items-center justify-between py-2 px-3 border-b border-border last:border-0"
                   >
                     {editingLocation && editingLocation.id === location.id ? (
                       <div className="flex-1 flex items-center">
@@ -207,7 +207,7 @@ export default function Settings() {
                           size="sm"
                           variant="ghost"
                           onClick={handleCancelEdit}
-                          className="text-gray-500"
+                          className="text-muted-foreground"
                         >
                           <XIcon className="h-4 w-4" />
                         </Button>
@@ -217,7 +217,7 @@ export default function Settings() {
                         <span className="font-medium flex-1">
                           {location.name}
                           {location.isDefault === true && (
-                            <span className="ml-2 text-xs text-gray-500">(Default)</span>
+                            <span className="ml-2 text-xs text-muted-foreground">(Default)</span>
                           )}
                         </span>
                         <div className="flex items-center">
@@ -225,7 +225,7 @@ export default function Settings() {
                             size="sm"
                             variant="ghost"
                             onClick={() => handleEditLocation(location.id, location.name)}
-                            className="text-gray-500"
+                            className="text-muted-foreground"
                           >
                             <PencilIcon className="h-4 w-4" />
                           </Button>
@@ -276,11 +276,11 @@ export default function Settings() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">About PlantDaddy</h2>
+        <h2 className="text-lg font-semibold mb-3 font-heading">About PlantDaddy</h2>
         <Card>
           <CardContent className="p-4">
-            <p className="text-gray-600 mb-2">Version 1.0.0</p>
-            <p className="text-gray-500 text-sm">
+            <p className="text-foreground mb-2">Version 1.0.0</p>
+            <p className="text-muted-foreground text-sm">
               PlantDaddy helps you track and manage your houseplants, ensuring they get watered on time.
             </p>
           </CardContent>
