@@ -76,6 +76,13 @@ export default function AddEditPlant() {
   }, [recommendedPlant]);
 
   const { useGetPlant, createPlant, updatePlant, uploadPlantImage } = usePlants();
+  
+  // Debug form submission
+  useEffect(() => {
+    if (createPlant.error) {
+      console.log("Form submission error:", createPlant.error);
+    }
+  }, [createPlant.error]);
   const { locations, isLoading: isLoadingLocations } = useLocations();
   const { data: plantData, isLoading: isLoadingPlant } = useGetPlant(isEditing && id ? parseInt(id) : 0);
 

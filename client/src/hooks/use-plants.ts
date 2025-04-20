@@ -25,12 +25,24 @@ export function usePlants() {
   // Create a new plant
   const createPlant = useMutation({
     mutationFn: async (plant: InsertPlant) => {
-      const res = await apiRequest("POST", "/api/plants", plant);
-      return res.json();
+      try {
+        console.log("Creating plant with data:", plant);
+        const res = await apiRequest("POST", "/api/plants", plant);
+        if (typeof res.json === 'function') {
+          return await res.json();
+        }
+        return res; // If already parsed as JSON by apiRequest
+      } catch (error) {
+        console.error("Error creating plant:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/plants"] });
     },
+    onError: (error) => {
+      console.error("Plant creation mutation error:", error);
+    }
   });
   
   // Update a plant
