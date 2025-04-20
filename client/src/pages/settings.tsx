@@ -4,8 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useLocations } from "@/hooks/use-locations";
 import { useToast } from "@/hooks/use-toast";
-import { useNotificationSettings } from "@/hooks/use-notification-settings";
-import type { NotificationSettingsResponse } from "@/hooks/use-notification-settings";
+import { useNotificationSettings, NotificationSettingsResponse } from "@/hooks/use-notification-settings";
 import { 
   Loader2, 
   PencilIcon, 
@@ -51,6 +50,8 @@ export default function Settings() {
   const [editingLocation, setEditingLocation] = useState<{ id: number; name: string } | null>(null);
   const [pushoverAppToken, setPushoverAppToken] = useState("");
   const [pushoverUserKey, setPushoverUserKey] = useState("");
+  
+  const notificationSettings = settings as NotificationSettingsResponse;
 
   const handleAddLocation = () => {
     if (!newLocation.trim()) {
@@ -319,7 +320,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between py-2">
                   <div>
                     <h3 className="font-medium flex items-center">
-                      {(settings as NotificationSettingsResponse)?.enabled ? (
+                      {notificationSettings?.enabled ? (
                         <Bell className="h-5 w-5 mr-2 text-primary" />
                       ) : (
                         <BellOff className="h-5 w-5 mr-2 text-muted-foreground" />
@@ -360,10 +361,10 @@ export default function Settings() {
                           type="password"
                           value={pushoverAppToken}
                           onChange={(e) => setPushoverAppToken(e.target.value)}
-                          placeholder={settings?.pushoverAppToken ? "••••••••••••••••••••••••••••••" : "Enter your Pushover App Token"}
+                          placeholder={(settings as NotificationSettingsResponse)?.pushoverAppToken ? "••••••••••••••••••••••••••••••" : "Enter your Pushover App Token"}
                           className="mr-2"
                         />
-                        {settings?.pushoverAppToken && (
+                        {(settings as NotificationSettingsResponse)?.pushoverAppToken && (
                           <div className="text-green-500 flex items-center">
                             <CheckCircle className="h-4 w-4 mr-1" />
                             <span className="text-xs">Configured</span>
@@ -380,10 +381,10 @@ export default function Settings() {
                           type="password"
                           value={pushoverUserKey}
                           onChange={(e) => setPushoverUserKey(e.target.value)}
-                          placeholder={settings?.pushoverUserKey ? "••••••••••••••••••••••••••••••" : "Enter your Pushover User Key"}
+                          placeholder={(settings as NotificationSettingsResponse)?.pushoverUserKey ? "••••••••••••••••••••••••••••••" : "Enter your Pushover User Key"}
                           className="mr-2"
                         />
-                        {settings?.pushoverUserKey && (
+                        {(settings as NotificationSettingsResponse)?.pushoverUserKey && (
                           <div className="text-green-500 flex items-center">
                             <CheckCircle className="h-4 w-4 mr-1" />
                             <span className="text-xs">Configured</span>
@@ -437,7 +438,7 @@ export default function Settings() {
                             description: "Check your device for the test notification.",
                           });
                         }}
-                        disabled={isTesting || !settings?.pushoverAppToken || !settings?.pushoverUserKey || !settings?.enabled}
+                        disabled={isTesting || !(settings as NotificationSettingsResponse)?.pushoverAppToken || !(settings as NotificationSettingsResponse)?.pushoverUserKey || !(settings as NotificationSettingsResponse)?.enabled}
                       >
                         {isTesting ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -448,7 +449,7 @@ export default function Settings() {
                       </Button>
                     </div>
                     
-                    {settings?.enabled && (!settings.pushoverAppToken || !settings.pushoverUserKey) && (
+                    {(settings as NotificationSettingsResponse)?.enabled && (!(settings as NotificationSettingsResponse).pushoverAppToken || !(settings as NotificationSettingsResponse).pushoverUserKey) && (
                       <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-3 mt-2">
                         <div className="flex items-start">
                           <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-2" />

@@ -44,7 +44,7 @@ export function useNotificationSettings() {
   const testNotificationMutation = useMutation({
     mutationFn: async () => {
       console.log('Testing notification settings');
-      return apiRequest<{ success: boolean; message: string }>('/api/notification-settings/test', {
+      return apiRequest('/api/notification-settings/test', {
         method: 'POST',
       });
     },
