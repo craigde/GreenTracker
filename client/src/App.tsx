@@ -31,7 +31,7 @@ function AppNavBar() {
 
 function Router() {
   return (
-    <div className="flex flex-col h-screen bg-neutral">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       <Header />
       <main className="flex-1 overflow-y-auto pb-16">
         <Switch>
@@ -53,10 +53,14 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <ThemeProvider defaultTheme="light">
+        <ThemeConsumer>
+          <TooltipProvider>
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </ThemeConsumer>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

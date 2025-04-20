@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useLocations } from "@/hooks/use-locations";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, PencilIcon, Trash2Icon, PlusIcon, SaveIcon, XIcon } from "lucide-react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -124,6 +125,22 @@ export default function Settings() {
       </header>
 
       <section className="mb-8">
+        <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">Appearance</h2>
+        <p className="text-sm text-gray-500 mb-4">
+          Customize the look and feel of PlantDaddy.
+        </p>
+        <Card className="mb-8">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium text-gray-700">Dark Mode</h3>
+                <p className="text-sm text-gray-500">Switch between light and dark themes.</p>
+              </div>
+              <ThemeToggle />
+            </div>
+          </CardContent>
+        </Card>
+
         <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">Locations</h2>
         <p className="text-sm text-gray-500 mb-4">
           Manage the locations where you keep your plants.
@@ -259,12 +276,12 @@ export default function Settings() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">About PlantCare</h2>
+        <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">About PlantDaddy</h2>
         <Card>
           <CardContent className="p-4">
             <p className="text-gray-600 mb-2">Version 1.0.0</p>
             <p className="text-gray-500 text-sm">
-              PlantCare helps you track and manage your houseplants, ensuring they get watered on time.
+              PlantDaddy helps you track and manage your houseplants, ensuring they get watered on time.
             </p>
           </CardContent>
         </Card>
