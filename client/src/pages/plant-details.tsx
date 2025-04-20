@@ -6,6 +6,7 @@ import { StatusDot } from "@/components/ui/status-dot";
 import { usePlants } from "@/hooks/use-plants";
 import { getPlantStatus, getStatusText } from "@/lib/plant-utils";
 import { formatDate, formatTime, formatDistanceToNow } from "@/lib/date-utils";
+import { Plant } from "@shared/schema";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -150,7 +151,7 @@ export default function PlantDetails() {
 
   return (
     <div>
-      <div className="bg-white p-4 shadow-sm">
+      <div className="bg-card p-4 shadow-sm">
         <div className="flex items-center mb-4">
           <Button variant="ghost" onClick={handleBack} className="mr-2">
             <span className="material-icons">arrow_back</span>

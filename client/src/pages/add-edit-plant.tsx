@@ -114,20 +114,24 @@ export default function AddEditPlant() {
   // Load plant data if editing
   useEffect(() => {
     if (isEditing && plantData) {
+      // Cast to any to avoid TypeScript errors
+      const plant = plantData as any;
+      console.log("Populating edit form with plant data:", plant);
+      
       form.reset({
-        name: plantData.name,
-        species: plantData.species || "",
-        location: plantData.location,
-        wateringFrequency: plantData.wateringFrequency,
-        lastWatered: new Date(plantData.lastWatered).toISOString().split("T")[0],
-        notes: plantData.notes || "",
-        imageUrl: plantData.imageUrl || undefined,
+        name: plant.name || "",
+        species: plant.species || "",
+        location: plant.location || "",
+        wateringFrequency: plant.wateringFrequency || 7,
+        lastWatered: plant.lastWatered ? new Date(plant.lastWatered).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+        notes: plant.notes || "",
+        imageUrl: plant.imageUrl || undefined,
       });
       
       // Set image preview if plant has an image
-      if (plantData.imageUrl) {
-        setImagePreview(plantData.imageUrl);
-        console.log("Set image preview for edited plant:", plantData.imageUrl);
+      if (plant.imageUrl) {
+        setImagePreview(plant.imageUrl);
+        console.log("Set image preview for edited plant:", plant.imageUrl);
       }
     } else if (!isEditing && recommendedPlant?.imageUrl) {
       // Set the species image as preview for new plants
@@ -277,7 +281,7 @@ export default function AddEditPlant() {
 
   return (
     <div>
-      <div className="bg-white p-4 shadow-sm">
+      <div className="bg-card p-4 shadow-sm">
         <div className="flex items-center mb-4">
           <Button variant="ghost" onClick={handleCancel} className="mr-2">
             <span className="material-icons">arrow_back</span>
