@@ -31,7 +31,7 @@ export function PlantCard({ plant, onWatered, onSelect }: PlantCardProps) {
 
   return (
     <Card 
-      className="bg-white rounded-lg shadow-md mb-4 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border border-gray-100"
+      className="bg-card rounded-lg shadow-md mb-4 overflow-hidden hover:shadow-lg transition-all duration-300 cursor-pointer border"
       onClick={handleClick}
     >
       {plant.imageUrl && (
@@ -75,8 +75,8 @@ export function PlantCard({ plant, onWatered, onSelect }: PlantCardProps) {
         
         <div className="flex justify-between items-center mt-3">
           <div>
-            <p className="text-gray-600 text-sm">{plant.location}</p>
-            <p className="text-gray-500 text-xs mt-1">Last watered: {lastWateredText}</p>
+            <p className="text-sm">{plant.location}</p>
+            <p className="text-muted-foreground text-xs mt-1">Last watered: {lastWateredText}</p>
           </div>
           
           {status === 'watered' ? (

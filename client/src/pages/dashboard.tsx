@@ -31,13 +31,13 @@ export default function Dashboard() {
           <Skeleton className="h-4 w-3/4" />
         </div>
 
-        <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">Water Today</h2>
+        <h2 className="text-lg font-semibold mb-3 font-heading">Water Today</h2>
         <div className="space-y-4 mb-8">
           <Skeleton className="h-32 w-full rounded-lg" />
           <Skeleton className="h-32 w-full rounded-lg" />
         </div>
 
-        <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">Coming Up</h2>
+        <h2 className="text-lg font-semibold mb-3 font-heading">Coming Up</h2>
         <div className="space-y-4">
           <Skeleton className="h-32 w-full rounded-lg" />
         </div>
@@ -50,8 +50,8 @@ export default function Dashboard() {
   return (
     <div className="px-4 py-6">
       <header className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800 font-heading">Welcome to PlantDaddy</h1>
-        <p className="text-gray-600 mt-2">
+        <h1 className="text-2xl font-bold font-heading">Welcome to PlantDaddy</h1>
+        <p className="text-muted-foreground mt-2">
           {plantsToWaterToday.length > 0 ? (
             <>
               You have{" "}
@@ -81,7 +81,7 @@ export default function Dashboard() {
         <>
           {/* Water Today Section */}
           <section className="mb-8">
-            <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">
+            <h2 className="text-lg font-semibold mb-3 font-heading">
               Water Today
             </h2>
 
@@ -102,7 +102,7 @@ export default function Dashboard() {
           {/* Coming Up Section */}
           {upcomingPlants.length > 0 && (
             <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">
+              <h2 className="text-lg font-semibold mb-3 font-heading">
                 Coming Up
               </h2>
 
@@ -120,7 +120,7 @@ export default function Dashboard() {
           {/* Recently Watered Section */}
           {recentlyWatered.length > 0 && (
             <section>
-              <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">
+              <h2 className="text-lg font-semibold mb-3 font-heading">
                 Recently Watered
               </h2>
 
