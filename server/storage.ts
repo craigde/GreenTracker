@@ -284,6 +284,22 @@ export class MemStorage implements IStorage {
         imageUrl: "/uploads/snake-plant.jpg"
       },
       {
+        name: "Jade Plant",
+        scientificName: "Crassula ovata",
+        family: "Crassulaceae",
+        origin: "South Africa",
+        description: "A succulent with thick, woody stems and oval-shaped, fleshy leaves. Often called 'money plant' or 'lucky plant' and used in feng shui practices.",
+        careLevel: "easy",
+        lightRequirements: "bright indirect to direct",
+        wateringFrequency: 14, // Every two weeks
+        humidity: "low",
+        soilType: "Cactus mix or well-draining soil",
+        propagation: "Leaf or stem cuttings",
+        toxicity: "toxic to pets",
+        commonIssues: "Shriveled leaves from underwatering; root rot from overwatering; dropping leaves from cold.",
+        imageUrl: "/uploads/jade-plant.jpg"
+      },
+      {
         name: "Pothos",
         scientificName: "Epipremnum aureum",
         family: "Araceae",
@@ -458,6 +474,22 @@ export class MemStorage implements IStorage {
         toxicity: "non-toxic",
         commonIssues: "Crispy edges from low humidity; brown spots from tap water minerals; curling from underwatering.",
         imageUrl: "/uploads/calathea.jpg"
+      },
+      {
+        name: "String of Pearls",
+        scientificName: "Senecio rowleyanus",
+        family: "Asteraceae",
+        origin: "Southwest Africa",
+        description: "A striking succulent with cascading stems covered in small, spherical leaves that resemble pearls or beads. Perfect for hanging baskets or shelf displays.",
+        careLevel: "moderate",
+        lightRequirements: "bright indirect",
+        wateringFrequency: 14, // Every two weeks
+        humidity: "low",
+        soilType: "Cactus or succulent mix",
+        propagation: "Stem cuttings",
+        toxicity: "toxic to pets and humans",
+        commonIssues: "Shriveled pearls indicate underwatering; mushy stems indicate overwatering; stretching indicates insufficient light.",
+        imageUrl: "/uploads/string-of-pearls.jpg"
       }
     ];
     
