@@ -77,11 +77,20 @@ export const groupPlantsByStatus = (plants: Plant[]) => {
 };
 
 // Helper function to check if a date is today
-function isToday(date: Date): boolean {
+function isToday(date: Date | string): boolean {
+  // Ensure we have a Date object
+  const dateObj = date instanceof Date ? date : new Date(date);
   const today = new Date();
-  return date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear();
+  
+  // Check if date is valid before trying to use getDate()
+  if (isNaN(dateObj.getTime())) {
+    console.error("Invalid date in isToday function:", date);
+    return false;
+  }
+  
+  return dateObj.getDate() === today.getDate() &&
+    dateObj.getMonth() === today.getMonth() &&
+    dateObj.getFullYear() === today.getFullYear();
 }
 
 // This function is kept for backward compatibility

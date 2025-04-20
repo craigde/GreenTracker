@@ -121,7 +121,7 @@ export default function AddEditPlant() {
         wateringFrequency: plantData.wateringFrequency,
         lastWatered: new Date(plantData.lastWatered).toISOString().split("T")[0],
         notes: plantData.notes || "",
-        imageUrl: plantData.imageUrl,
+        imageUrl: plantData.imageUrl || undefined,
       });
       
       // Set image preview if plant has an image
