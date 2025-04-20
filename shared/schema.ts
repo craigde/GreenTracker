@@ -84,3 +84,18 @@ export const insertPlantSpeciesSchema = plantSpeciesSchema.omit({ id: true });
 
 export type PlantSpecies = typeof plantSpecies.$inferSelect;
 export type InsertPlantSpecies = z.infer<typeof insertPlantSpeciesSchema>;
+
+// Notification settings
+export const notificationSettings = pgTable("notification_settings", {
+  id: serial("id").primaryKey(),
+  enabled: boolean("enabled").notNull().default(true),
+  pushoverAppToken: text("pushover_app_token"),
+  pushoverUserKey: text("pushover_user_key"),
+  lastUpdated: timestamp("last_updated").defaultNow(),
+});
+
+export const notificationSettingsSchema = createInsertSchema(notificationSettings);
+export const insertNotificationSettingsSchema = notificationSettingsSchema.omit({ id: true });
+
+export type NotificationSettings = typeof notificationSettings.$inferSelect;
+export type InsertNotificationSettings = z.infer<typeof insertNotificationSettingsSchema>;

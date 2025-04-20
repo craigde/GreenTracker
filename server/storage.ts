@@ -3,6 +3,7 @@ import {
   wateringHistory, 
   locations,
   plantSpecies,
+  notificationSettings,
   type Plant, 
   type InsertPlant, 
   type WateringHistory, 
@@ -13,7 +14,9 @@ import {
   type User, 
   type InsertUser,
   type PlantSpecies,
-  type InsertPlantSpecies
+  type InsertPlantSpecies,
+  type NotificationSettings,
+  type InsertNotificationSettings
 } from "@shared/schema";
 
 export interface IStorage {
@@ -48,6 +51,10 @@ export interface IStorage {
   updatePlantSpecies(id: number, species: Partial<InsertPlantSpecies>): Promise<PlantSpecies | undefined>;
   deletePlantSpecies(id: number): Promise<boolean>;
   searchPlantSpecies(query: string): Promise<PlantSpecies[]>;
+  
+  // Notification settings methods
+  getNotificationSettings(): Promise<NotificationSettings | undefined>;
+  updateNotificationSettings(settings: Partial<InsertNotificationSettings>): Promise<NotificationSettings>;
 }
 
 export class MemStorage implements IStorage {
@@ -56,6 +63,7 @@ export class MemStorage implements IStorage {
   private wateringHistory: Map<number, WateringHistory>;
   private locations: Map<number, Location>;
   private plantSpeciesCatalog: Map<number, PlantSpecies>;
+  private notificationSettingsData: NotificationSettings | undefined;
   
   private userIdCounter: number;
   private plantIdCounter: number;
