@@ -599,6 +599,33 @@ export class MemStorage implements IStorage {
       );
     });
   }
+  
+  // Notification settings methods
+  async getNotificationSettings(): Promise<NotificationSettings | undefined> {
+    return this.notificationSettingsData;
+  }
+
+  async updateNotificationSettings(settings: Partial<InsertNotificationSettings>): Promise<NotificationSettings> {
+    // Initialize default settings if they don't exist
+    if (!this.notificationSettingsData) {
+      this.notificationSettingsData = {
+        id: 1,
+        enabled: true,
+        pushoverAppToken: process.env.PUSHOVER_APP_TOKEN || null,
+        pushoverUserKey: process.env.PUSHOVER_USER_KEY || null,
+        lastUpdated: new Date()
+      };
+    }
+
+    // Update settings
+    this.notificationSettingsData = {
+      ...this.notificationSettingsData,
+      ...settings,
+      lastUpdated: new Date()
+    };
+
+    return this.notificationSettingsData;
+  }
 }
 
 export const storage = new MemStorage();

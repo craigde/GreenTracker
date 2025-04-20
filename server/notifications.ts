@@ -1,16 +1,14 @@
 import fetch from 'node-fetch';
 import { Plant } from '@shared/schema';
 import { daysUntilWatering, isOverdue } from '../client/src/lib/date-utils';
+import { storage } from './storage';
 
 // Pushover API endpoint
 const PUSHOVER_API_URL = 'https://api.pushover.net/1/messages.json';
-const PUSHOVER_APP_TOKEN = process.env.PUSHOVER_APP_TOKEN;
-const PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 
-// Validation
-if (!PUSHOVER_APP_TOKEN || !PUSHOVER_USER_KEY) {
-  console.warn('Pushover credentials missing. Notifications will not be sent.');
-}
+// Load environment variables as fallbacks
+const ENV_PUSHOVER_APP_TOKEN = process.env.PUSHOVER_APP_TOKEN;
+const ENV_PUSHOVER_USER_KEY = process.env.PUSHOVER_USER_KEY;
 
 export async function sendPushoverNotification(
   title: string,
@@ -19,19 +17,38 @@ export async function sendPushoverNotification(
   url?: string,
   urlTitle?: string
 ): Promise<boolean> {
-  // Debug: Print token length and first/last characters (partial for security)
-  console.log(`PUSHOVER_APP_TOKEN: ${PUSHOVER_APP_TOKEN?.substr(0, 3)}...${PUSHOVER_APP_TOKEN?.substr(-3) || ''} (${PUSHOVER_APP_TOKEN?.length || 0} chars)`);
-  console.log(`PUSHOVER_USER_KEY: ${PUSHOVER_USER_KEY?.substr(0, 3)}...${PUSHOVER_USER_KEY?.substr(-3) || ''} (${PUSHOVER_USER_KEY?.length || 0} chars)`);
+  // Get notification settings from storage
+  const settings = await storage.getNotificationSettings();
   
-  if (!PUSHOVER_APP_TOKEN || !PUSHOVER_USER_KEY) {
+  // Use settings if available, otherwise fallback to environment variables
+  const pushoverEnabled = settings?.enabled !== false; // Default to true if not set
+  const pushoverAppToken = settings?.pushoverAppToken || ENV_PUSHOVER_APP_TOKEN;
+  const pushoverUserKey = settings?.pushoverUserKey || ENV_PUSHOVER_USER_KEY;
+  
+  // Debug: Print token length and first/last characters (partial for security)
+  if (pushoverAppToken) {
+    console.log(`PUSHOVER_APP_TOKEN: ${pushoverAppToken.substr(0, 3)}...${pushoverAppToken.substr(-3)} (${pushoverAppToken.length} chars)`);
+  }
+  
+  if (pushoverUserKey) {
+    console.log(`PUSHOVER_USER_KEY: ${pushoverUserKey.substr(0, 3)}...${pushoverUserKey.substr(-3)} (${pushoverUserKey.length} chars)`);
+  }
+  
+  // If notifications are disabled or credentials are missing, don't send notification
+  if (!pushoverEnabled) {
+    console.log('Notifications are disabled in settings. Skipping notification.');
+    return false;
+  }
+  
+  if (!pushoverAppToken || !pushoverUserKey) {
     console.warn('Cannot send notification: Pushover credentials missing');
     return false;
   }
 
   try {
     const payload = {
-      token: PUSHOVER_APP_TOKEN,
-      user: PUSHOVER_USER_KEY,
+      token: pushoverAppToken,
+      user: pushoverUserKey,
       title,
       message,
       priority,
