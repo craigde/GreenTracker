@@ -58,14 +58,14 @@ export default function Notifications() {
   return (
     <div className="px-4 py-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 font-heading">Notifications</h1>
-        <p className="text-gray-600">Plants that need your attention</p>
+        <h1 className="text-2xl font-bold font-heading">Notifications</h1>
+        <p className="text-muted-foreground">Plants that need your attention</p>
       </header>
 
       {plantsNeedingAttention.length === 0 ? (
         <div className="text-center py-10">
-          <p className="text-gray-500 mb-2">No plants need attention right now</p>
-          <p className="text-sm text-gray-400">Everything is watered and happy!</p>
+          <p className="text-muted-foreground mb-2">No plants need attention right now</p>
+          <p className="text-sm text-muted-foreground/70">Everything is watered and happy!</p>
         </div>
       ) : (
         <Card className="p-4 mb-4">
@@ -77,7 +77,7 @@ export default function Notifications() {
             return (
               <div 
                 key={plant.id} 
-                className="mb-4 pb-3 border-b border-gray-100 last:border-b-0 last:mb-0 last:pb-0"
+                className="mb-4 pb-3 border-b border-border last:border-b-0 last:mb-0 last:pb-0"
               >
                 <div className="flex justify-between items-center">
                   <div className="flex items-center space-x-2">
@@ -88,10 +88,10 @@ export default function Notifications() {
                     </span>
                     <h3 className="font-semibold">{plant.name} needs water{status === "soon" ? " soon" : ""}</h3>
                   </div>
-                  <span className="text-sm text-gray-500">Today</span>
+                  <span className="text-sm text-muted-foreground">Today</span>
                 </div>
                 
-                <p className="text-gray-600 text-sm mt-1">
+                <p className="text-muted-foreground text-sm mt-1">
                   Last watered {lastWateredText} ({statusText})
                 </p>
                 

@@ -120,21 +120,21 @@ export default function Settings() {
   return (
     <div className="px-4 py-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 font-heading">Settings</h1>
-        <p className="text-gray-600">Customize your plant care preferences</p>
+        <h1 className="text-2xl font-bold font-heading">Settings</h1>
+        <p className="text-muted-foreground">Customize your plant care preferences</p>
       </header>
 
       <section className="mb-8">
-        <h2 className="text-lg font-semibold mb-3 text-gray-700 font-heading">Appearance</h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <h2 className="text-lg font-semibold mb-3 font-heading">Appearance</h2>
+        <p className="text-sm text-muted-foreground mb-4">
           Customize the look and feel of PlantDaddy.
         </p>
         <Card className="mb-8">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="font-medium text-gray-700">Dark Mode</h3>
-                <p className="text-sm text-gray-500">Switch between light and dark themes.</p>
+                <h3 className="font-medium">Dark Mode</h3>
+                <p className="text-sm text-muted-foreground">Switch between light and dark themes.</p>
               </div>
               <ThemeToggle />
             </div>
