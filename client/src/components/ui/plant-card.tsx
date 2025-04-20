@@ -27,7 +27,20 @@ export function PlantCard({ plant, onWatered, onSelect }: PlantCardProps) {
     onWatered(plant.id);
   };
   
-  const lastWateredText = formatDistanceToNow(plant.lastWatered);
+  // Ensure lastWatered is a proper Date object before formatting
+  let lastWateredDate;
+  try {
+    lastWateredDate = plant.lastWatered ? new Date(plant.lastWatered) : null;
+    if (lastWateredDate && isNaN(lastWateredDate.getTime())) {
+      console.warn("Invalid lastWatered date in PlantCard:", plant.lastWatered);
+      lastWateredDate = null;
+    }
+  } catch (error) {
+    console.error("Error parsing lastWatered date:", error);
+    lastWateredDate = null;
+  }
+  
+  const lastWateredText = formatDistanceToNow(lastWateredDate);
 
   return (
     <Card 

@@ -130,6 +130,14 @@ export default function PlantDetails() {
   }
 
   const plant = plantData;
+  
+  // Add safety check for null values in date processing
+  // If lastWatered is null or invalid, set it to today's date
+  if (!plant.lastWatered || new Date(plant.lastWatered).toString() === 'Invalid Date') {
+    console.log("Fixing invalid lastWatered date for plant:", plant.id);
+    plant.lastWatered = new Date();
+  }
+  
   const status = getPlantStatus(plant);
   const statusText = getStatusText(plant);
 
@@ -230,20 +238,32 @@ export default function PlantDetails() {
 
             <div className="space-y-3">
               {plant.wateringHistory && plant.wateringHistory.length > 0 ? (
-                plant.wateringHistory.map((entry) => (
-                  <div
-                    key={entry.id}
-                    className="flex justify-between items-center py-2 border-b border-gray-100"
-                  >
-                    <div>
-                      <p className="font-medium">{formatDate(new Date(entry.wateredAt))}</p>
-                      <p className="text-sm text-gray-500">{formatTime(new Date(entry.wateredAt))}</p>
+                plant.wateringHistory.map((entry) => {
+                  // Ensure wateredAt is a valid date
+                  const wateredAtDate = entry.wateredAt ? new Date(entry.wateredAt) : null;
+                  const isValidDate = wateredAtDate && !isNaN(wateredAtDate.getTime());
+                  
+                  // If the date is invalid, skip this entry
+                  if (!isValidDate) {
+                    console.warn("Invalid watering history date encountered:", entry);
+                    return null;
+                  }
+                  
+                  return (
+                    <div
+                      key={entry.id}
+                      className="flex justify-between items-center py-2 border-b border-gray-100"
+                    >
+                      <div>
+                        <p className="font-medium">{formatDate(wateredAtDate)}</p>
+                        <p className="text-sm text-gray-500">{formatTime(wateredAtDate)}</p>
+                      </div>
+                      <span className="text-sm text-gray-500">
+                        {formatDistanceToNow(wateredAtDate)}
+                      </span>
                     </div>
-                    <span className="text-sm text-gray-500">
-                      {formatDistanceToNow(new Date(entry.wateredAt))}
-                    </span>
-                  </div>
-                ))
+                  );
+                }).filter(Boolean) // Filter out any null entries (invalid dates)
               ) : (
                 <p className="text-gray-500 text-sm py-2">No watering history available.</p>
               )}

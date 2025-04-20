@@ -1,18 +1,35 @@
 import { format, formatDistanceToNow as fdtn, isBefore, isToday, addDays } from "date-fns";
 
-export const formatDate = (date: Date): string => {
+export const formatDate = (date: Date | null): string => {
+  if (!date || isNaN(date.getTime())) {
+    console.warn("Invalid date provided to formatDate:", date);
+    return "Unknown date";
+  }
   return format(date, "MMM d, yyyy");
 };
 
-export const formatTime = (date: Date): string => {
+export const formatTime = (date: Date | null): string => {
+  if (!date || isNaN(date.getTime())) {
+    console.warn("Invalid date provided to formatTime:", date);
+    return "Unknown time";
+  }
   return format(date, "h:mm a");
 };
 
-export const formatDateTime = (date: Date): string => {
+export const formatDateTime = (date: Date | null): string => {
+  if (!date || isNaN(date.getTime())) {
+    console.warn("Invalid date provided to formatDateTime:", date);
+    return "Unknown date/time";
+  }
   return format(date, "MMM d, yyyy 'at' h:mm a");
 };
 
-export const formatDistanceToNow = (date: Date): string => {
+export const formatDistanceToNow = (date: Date | null): string => {
+  if (!date || isNaN(date.getTime())) {
+    console.warn("Invalid date provided to formatDistanceToNow:", date);
+    return "Unknown";
+  }
+  
   if (isToday(date)) {
     return "Today";
   }
