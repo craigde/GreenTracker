@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useLocations } from "@/hooks/use-locations";
 import { useToast } from "@/hooks/use-toast";
 import { useNotificationSettings } from "@/hooks/use-notification-settings";
+import type { NotificationSettingsResponse } from "@/hooks/use-notification-settings";
 import { 
   Loader2, 
   PencilIcon, 
@@ -318,7 +319,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between py-2">
                   <div>
                     <h3 className="font-medium flex items-center">
-                      {settings?.enabled ? (
+                      {(settings as NotificationSettingsResponse)?.enabled ? (
                         <Bell className="h-5 w-5 mr-2 text-primary" />
                       ) : (
                         <BellOff className="h-5 w-5 mr-2 text-muted-foreground" />
@@ -330,7 +331,7 @@ export default function Settings() {
                     </p>
                   </div>
                   <Switch
-                    checked={settings?.enabled ?? false}
+                    checked={(settings as NotificationSettingsResponse)?.enabled ?? false}
                     onCheckedChange={(checked) => {
                       updateSettings({ enabled: checked });
                       toast({

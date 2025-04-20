@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { NotificationSettings } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
-type NotificationSettingsResponse = {
+export type NotificationSettingsResponse = {
   id: number | null;
   enabled: boolean;
   pushoverAppToken: boolean; // Indicates if token exists, not the actual token
@@ -25,6 +25,7 @@ export function useNotificationSettings() {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (updatedSettings: UpdateNotificationSettingsParams) => {
+      console.log('Updating notification settings:', updatedSettings);
       return apiRequest('/api/notification-settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -32,15 +33,26 @@ export function useNotificationSettings() {
       });
     },
     onSuccess: () => {
+      console.log('Successfully updated notification settings');
       queryClient.invalidateQueries({ queryKey: ['/api/notification-settings'] });
+    },
+    onError: (error: Error) => {
+      console.error('Error updating notification settings:', error);
     },
   });
 
   const testNotificationMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/notification-settings/test', {
+      console.log('Testing notification settings');
+      return apiRequest<{ success: boolean; message: string }>('/api/notification-settings/test', {
         method: 'POST',
       });
+    },
+    onSuccess: () => {
+      console.log('Test notification sent successfully');
+    },
+    onError: (error: Error) => {
+      console.error('Error sending test notification:', error);
     },
   });
 
