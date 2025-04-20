@@ -107,6 +107,7 @@ export default function AddEditPlant() {
       wateringFrequency: recommendedPlant?.wateringFrequency || 7,
       lastWatered: new Date().toISOString().split("T")[0],
       notes: "",
+      imageUrl: recommendedPlant?.imageUrl,
     },
   });
 
@@ -120,15 +121,18 @@ export default function AddEditPlant() {
         wateringFrequency: plantData.wateringFrequency,
         lastWatered: new Date(plantData.lastWatered).toISOString().split("T")[0],
         notes: plantData.notes || "",
+        imageUrl: plantData.imageUrl,
       });
       
       // Set image preview if plant has an image
       if (plantData.imageUrl) {
         setImagePreview(plantData.imageUrl);
+        console.log("Set image preview for edited plant:", plantData.imageUrl);
       }
     } else if (!isEditing && recommendedPlant?.imageUrl) {
       // Set the species image as preview for new plants
       setImagePreview(recommendedPlant.imageUrl);
+      console.log("Set image preview for new plant from recommended:", recommendedPlant.imageUrl);
     }
   }, [isEditing, plantData, recommendedPlant, form]);
   
@@ -141,7 +145,9 @@ export default function AddEditPlant() {
         species: recommendedPlant.species || form.getValues().species,
         location: locations[0].name,
         wateringFrequency: recommendedPlant.wateringFrequency || form.getValues().wateringFrequency,
+        imageUrl: recommendedPlant.imageUrl,
       });
+      console.log("Updated form with recommended plant data including imageUrl:", recommendedPlant.imageUrl);
     } else if (!isEditing && !isLoadingLocations && locations && locations.length > 0) {
       form.reset({
         ...form.getValues(),
