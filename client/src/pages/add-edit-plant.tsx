@@ -185,10 +185,14 @@ export default function AddEditPlant() {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    // Convert string date to Date object for the API
+    // Get the lastWatered date and ensure it's properly formatted
+    const lastWateredDate = new Date(values.lastWatered);
+    
+    // Convert string date to proper Date object for the API
     const processedValues = {
       ...values,
-      lastWatered: new Date(values.lastWatered),
+      // Explicitly create a new Date instance that Zod can validate
+      lastWatered: lastWateredDate,
       // Use the recommended plant's image URL as default if creating a new plant
       ...((!isEditing && recommendedPlant?.imageUrl) && { imageUrl: recommendedPlant.imageUrl })
     };

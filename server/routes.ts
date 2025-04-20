@@ -77,7 +77,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new plant
   apiRouter.post("/plants", async (req: Request, res: Response) => {
     try {
-      const parsedData = insertPlantSchema.safeParse(req.body);
+      // Convert lastWatered string to Date if needed
+      let data = req.body;
+      
+      // Handle date conversion issue for lastWatered
+      if (data.lastWatered && typeof data.lastWatered === 'string') {
+        try {
+          data = {
+            ...data,
+            lastWatered: new Date(data.lastWatered)
+          };
+        } catch (e) {
+          console.error("Date conversion error:", e);
+          return res.status(400).json({ 
+            message: "Invalid date format for lastWatered", 
+          });
+        }
+      }
+      
+      const parsedData = insertPlantSchema.safeParse(data);
       
       if (!parsedData.success) {
         return res.status(400).json({ 
@@ -101,9 +119,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid plant ID" });
       }
 
+      // Convert lastWatered string to Date if needed
+      let data = req.body;
+      
+      // Handle date conversion issue for lastWatered
+      if (data.lastWatered && typeof data.lastWatered === 'string') {
+        try {
+          data = {
+            ...data,
+            lastWatered: new Date(data.lastWatered)
+          };
+        } catch (e) {
+          console.error("Date conversion error:", e);
+          return res.status(400).json({ 
+            message: "Invalid date format for lastWatered", 
+          });
+        }
+      }
+
       // Validate the update data
       const updateSchema = insertPlantSchema.partial();
-      const parsedData = updateSchema.safeParse(req.body);
+      const parsedData = updateSchema.safeParse(data);
       
       if (!parsedData.success) {
         return res.status(400).json({ 
