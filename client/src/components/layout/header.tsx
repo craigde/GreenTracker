@@ -6,7 +6,7 @@ export function Header() {
   const [location, navigate] = useLocation();
   
   // Don't show the header on these pages as they have their own headers
-  const hideHeaderOn = ['/plants/', '/settings'];
+  const hideHeaderOn = ['/plants/'];
   
   const shouldShowHeader = !hideHeaderOn.some(path => location.startsWith(path));
   
