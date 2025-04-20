@@ -209,7 +209,7 @@ export default function PlantExplorer() {
             <DialogHeader>
               <DialogTitle className="text-2xl flex items-center">
                 {selectedSpecies.name}
-                <span className="text-sm ml-2 font-normal italic text-gray-500">
+                <span className="text-sm ml-2 font-normal italic text-muted-foreground">
                   ({selectedSpecies.scientificName})
                 </span>
               </DialogTitle>
@@ -263,13 +263,13 @@ export default function PlantExplorer() {
                     <TabsContent value="overview" className="space-y-4">
                       <div>
                         <h3 className="font-medium mb-2">Description</h3>
-                        <p className="text-gray-700">{selectedSpecies.description}</p>
+                        <p>{selectedSpecies.description}</p>
                       </div>
                       
                       {selectedSpecies.propagation && (
                         <div>
                           <h3 className="font-medium mb-2">Propagation</h3>
-                          <p className="text-gray-700">{selectedSpecies.propagation}</p>
+                          <p>{selectedSpecies.propagation}</p>
                         </div>
                       )}
                     </TabsContent>
@@ -281,7 +281,7 @@ export default function PlantExplorer() {
                         </div>
                         <div>
                           <h3 className="font-medium mb-1">Watering</h3>
-                          <p className="text-gray-700">
+                          <p>
                             {getWateringText(selectedSpecies.wateringFrequency)}: 
                             Water every {selectedSpecies.wateringFrequency} 
                             {selectedSpecies.wateringFrequency === 1 ? ' day' : ' days'}
@@ -295,21 +295,21 @@ export default function PlantExplorer() {
                         </div>
                         <div>
                           <h3 className="font-medium mb-1">Light</h3>
-                          <p className="text-gray-700">{selectedSpecies.lightRequirements}</p>
+                          <p>{selectedSpecies.lightRequirements}</p>
                         </div>
                       </div>
                       
                       {selectedSpecies.humidity && (
                         <div>
                           <h3 className="font-medium mb-1">Humidity</h3>
-                          <p className="text-gray-700">Prefers {selectedSpecies.humidity} humidity</p>
+                          <p>Prefers {selectedSpecies.humidity} humidity</p>
                         </div>
                       )}
                       
                       {selectedSpecies.soilType && (
                         <div>
                           <h3 className="font-medium mb-1">Soil</h3>
-                          <p className="text-gray-700">{selectedSpecies.soilType}</p>
+                          <p>{selectedSpecies.soilType}</p>
                         </div>
                       )}
                     </TabsContent>
@@ -317,7 +317,7 @@ export default function PlantExplorer() {
                     {selectedSpecies.commonIssues && (
                       <TabsContent value="issues">
                         <h3 className="font-medium mb-2">Common Issues & Solutions</h3>
-                        <p className="text-gray-700">{selectedSpecies.commonIssues}</p>
+                        <p>{selectedSpecies.commonIssues}</p>
                       </TabsContent>
                     )}
                   </Tabs>
@@ -330,11 +330,11 @@ export default function PlantExplorer() {
                 <h3 className="font-medium mb-4">Care Summary</h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   <div className="border rounded-lg p-3">
-                    <div className="text-sm text-gray-500 mb-1">Care Level</div>
+                    <div className="text-sm text-muted-foreground mb-1">Care Level</div>
                     <div className="font-medium">{formatCareLevel(selectedSpecies.careLevel)}</div>
                   </div>
                   <div className="border rounded-lg p-3">
-                    <div className="text-sm text-gray-500 mb-1">Watering</div>
+                    <div className="text-sm text-muted-foreground mb-1">Watering</div>
                     <div className="font-medium">Every {selectedSpecies.wateringFrequency} days</div>
                   </div>
                   <div className="border rounded-lg p-3">
