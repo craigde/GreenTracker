@@ -449,7 +449,7 @@ export class MemStorage implements IStorage {
         propagation: "Division or spores",
         toxicity: "non-toxic",
         commonIssues: "Brown fronds from low humidity; yellowing from overwatering.",
-        imageUrl: "/uploads/boston-fern-fix.svg"
+        imageUrl: "/uploads/boston-fern.svg"
       },
       {
         name: "Chinese Money Plant",
@@ -465,7 +465,7 @@ export class MemStorage implements IStorage {
         propagation: "Offsets/pups",
         toxicity: "non-toxic",
         commonIssues: "Curling leaves from too much light; leggy growth from insufficient light.",
-        imageUrl: "/uploads/chinese-money-plant-fix.svg"
+        imageUrl: "/uploads/chinese-money-plant-new.svg"
       },
       {
         name: "Calathea",
@@ -481,7 +481,7 @@ export class MemStorage implements IStorage {
         propagation: "Division during repotting",
         toxicity: "non-toxic",
         commonIssues: "Crispy edges from low humidity; brown spots from tap water minerals; curling from underwatering.",
-        imageUrl: "/uploads/calathea-fix.svg"
+        imageUrl: "/uploads/calathea-new.svg"
       },
       {
         name: "String of Pearls",
