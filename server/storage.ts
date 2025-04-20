@@ -628,4 +628,11 @@ export class MemStorage implements IStorage {
   }
 }
 
+// Create database tables and migrate data
+import { DatabaseStorage } from "./dbStorage";
+
+// For development, we'll use Memory Storage by default
+// In production, we should switch to DatabaseStorage
 export const storage = new MemStorage();
+// Uncomment the line below and comment out the line above to use database storage
+// export const storage = new DatabaseStorage();
