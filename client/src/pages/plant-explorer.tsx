@@ -77,9 +77,9 @@ export default function PlantExplorer() {
   
   // Get color class for toxicity
   const getToxicityColor = (toxicity: string | null): string => {
-    if (!toxicity) return 'bg-gray-100 text-gray-800';
-    if (toxicity.includes('non-toxic')) return 'bg-green-100 text-green-800';
-    return 'bg-red-100 text-red-800';
+    if (!toxicity) return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+    if (toxicity.includes('non-toxic')) return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+    return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
   };
 
   return (
@@ -145,7 +145,7 @@ export default function PlantExplorer() {
       {isLoading ? (
         <div className="py-12 flex justify-center">
           <div className="flex flex-col items-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
             <p className="text-muted-foreground">Loading plant catalog...</p>
           </div>
         </div>
@@ -199,7 +199,7 @@ export default function PlantExplorer() {
             </DialogHeader>
             <div className="py-8 flex justify-center">
               <div className="flex flex-col items-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mb-4"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
                 <p className="text-muted-foreground">Loading plant details...</p>
               </div>
             </div>
@@ -276,8 +276,8 @@ export default function PlantExplorer() {
                     
                     <TabsContent value="care" className="space-y-6">
                       <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 p-2 bg-blue-50 rounded-lg">
-                          <Droplets className="h-6 w-6 text-blue-600" />
+                        <div className="flex-shrink-0 p-2 bg-blue-50 dark:bg-blue-950 rounded-lg">
+                          <Droplets className="h-6 w-6 text-blue-600 dark:text-blue-400" />
                         </div>
                         <div>
                           <h3 className="font-medium mb-1">Watering</h3>
@@ -290,8 +290,8 @@ export default function PlantExplorer() {
                       </div>
                       
                       <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 p-2 bg-amber-50 rounded-lg">
-                          <Sun className="h-6 w-6 text-amber-600" />
+                        <div className="flex-shrink-0 p-2 bg-amber-50 dark:bg-amber-950 rounded-lg">
+                          <Sun className="h-6 w-6 text-amber-600 dark:text-amber-400" />
                         </div>
                         <div>
                           <h3 className="font-medium mb-1">Light</h3>
