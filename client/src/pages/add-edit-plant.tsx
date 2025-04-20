@@ -30,6 +30,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getWateringFrequencies } from "@/lib/plant-utils";
 import { useLocations } from "@/hooks/use-locations";
 import { useLocationState } from "@/hooks/use-location-state";
+import { usePlantSpecies } from "@/hooks/use-plant-species";
 import { Loader2, Upload, Image } from "lucide-react";
 
 export default function AddEditPlant() {
@@ -84,6 +85,8 @@ export default function AddEditPlant() {
     }
   }, [createPlant.error]);
   const { locations, isLoading: isLoadingLocations } = useLocations();
+  const { getPlantSpecies } = usePlantSpecies();
+  const { data: plantSpeciesData, isLoading: isLoadingSpecies } = getPlantSpecies();
   const { data: plantData, isLoading: isLoadingPlant } = useGetPlant(isEditing && id ? parseInt(id) : 0);
 
   // Form schema
@@ -320,14 +323,54 @@ export default function AddEditPlant() {
                   name="species"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Species (Optional)</FormLabel>
-                      <FormControl>
-                        <Input
-                          placeholder="e.g., Monstera Deliciosa"
-                          {...field}
-                          disabled={isLoadingPlant}
-                        />
-                      </FormControl>
+                      <FormLabel>Species</FormLabel>
+                      <Select
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          if (value && plantSpeciesData) {
+                            // Find the selected species in the data
+                            const selectedSpecies = plantSpeciesData.find(s => s.name === value);
+                            if (selectedSpecies) {
+                              // Auto-fill watering frequency and set the species image
+                              form.setValue('wateringFrequency', selectedSpecies.wateringFrequency);
+                              if (selectedSpecies.imageUrl) {
+                                form.setValue('imageUrl', selectedSpecies.imageUrl);
+                                setImagePreview(selectedSpecies.imageUrl);
+                              }
+                            }
+                          }
+                        }}
+                        value={field.value}
+                        disabled={isLoadingPlant || isLoadingSpecies}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select plant species" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {isLoadingSpecies ? (
+                            <div className="flex justify-center p-2">
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                            </div>
+                          ) : !plantSpeciesData || plantSpeciesData.length === 0 ? (
+                            <div className="p-2 text-center text-sm text-gray-500">
+                              No species available
+                            </div>
+                          ) : (
+                            <>
+                              {plantSpeciesData.map((species) => (
+                                <SelectItem key={species.id} value={species.name}>
+                                  {species.name}
+                                </SelectItem>
+                              ))}
+                            </>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Select a species to auto-fill care information
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
