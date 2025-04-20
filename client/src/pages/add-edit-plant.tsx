@@ -398,7 +398,7 @@ export default function AddEditPlant() {
                       <FormLabel>Location</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value}
+                        value={field.value}
                         disabled={isLoadingPlant}
                       >
                         <FormControl>
@@ -437,7 +437,7 @@ export default function AddEditPlant() {
                       <FormLabel>Watering Frequency</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        defaultValue={field.value.toString()}
+                        value={field.value.toString()}
                         disabled={isLoadingPlant}
                       >
                         <FormControl>
