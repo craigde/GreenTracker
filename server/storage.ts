@@ -409,7 +409,7 @@ export class MemStorage implements IStorage {
         propagation: "Stem cuttings or air layering",
         toxicity: "toxic to pets",
         commonIssues: "Leaf drop from overwatering or cold drafts; dusty leaves reduce growth.",
-        imageUrl: "/uploads/rubber-plant-fix.svg"
+        imageUrl: "/uploads/rubber-plant-new.svg"
       },
       {
         name: "Aloe Vera",
