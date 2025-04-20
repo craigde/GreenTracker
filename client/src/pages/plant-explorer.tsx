@@ -10,6 +10,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { 
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
 import { 
   Search, 
   Leaf, 
@@ -19,20 +33,64 @@ import {
   Sun, 
   AlertTriangle, 
   Home,
-  RefreshCw
+  RefreshCw,
+  Plus,
+  PlusCircle,
+  Loader2
 } from 'lucide-react';
-import type { PlantSpecies } from '@shared/schema';
+import type { PlantSpecies, InsertPlantSpecies } from '@shared/schema';
 
 export default function PlantExplorer() {
   const [searchQuery, setSearchQuery] = useState('');
   const [careLevel, setCareLevel] = useState<string>('');
   const [selectedSpeciesId, setSelectedSpeciesId] = useState<number | null>(null);
+  const [showAddSpeciesDialog, setShowAddSpeciesDialog] = useState(false);
   const [, navigate] = useLocation();
+  const { toast } = useToast();
   
   // Get plant species data with search query
-  const { getPlantSpecies, getPlantSpeciesById } = usePlantSpecies();
+  const { getPlantSpecies, getPlantSpeciesById, addPlantSpecies } = usePlantSpecies();
   const { data: plantSpecies, isLoading, isError } = getPlantSpecies();
   const { data: selectedSpecies, isLoading: isLoadingSelected } = getPlantSpeciesById(selectedSpeciesId);
+  
+  // Create form schema for adding new plant species
+  const formSchema = z.object({
+    name: z.string().min(1, "Plant name is required"),
+    scientificName: z.string().min(1, "Scientific name is required"),
+    description: z.string().min(1, "Description is required"),
+    origin: z.string().optional().nullable(),
+    family: z.string().optional().nullable(),
+    careLevel: z.enum(["easy", "moderate", "difficult"]),
+    wateringFrequency: z.coerce.number().min(1, "Watering frequency is required"),
+    lightRequirements: z.string().min(1, "Light requirements are required"),
+    humidity: z.string().optional().nullable(),
+    soilType: z.string().optional().nullable(),
+    toxicity: z.string().optional().nullable(),
+    propagation: z.string().optional().nullable(),
+    commonIssues: z.string().optional().nullable(),
+    imageUrl: z.string().optional().nullable(),
+  });
+  
+  // Form for adding new plant species
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: "",
+      scientificName: "",
+      description: "",
+      origin: "",
+      family: "",
+      careLevel: "easy",
+      wateringFrequency: 7,
+      lightRequirements: "",
+      humidity: "",
+      soilType: "",
+      toxicity: "",
+      propagation: "",
+      commonIssues: "",
+      imageUrl: "",
+    },
+  });
   
   // Handle species selection
   const handleSelectSpecies = (speciesId: number) => {
@@ -82,6 +140,32 @@ export default function PlantExplorer() {
     return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
   };
 
+  // Handle form submission
+  const onSubmit = async (data: z.infer<typeof formSchema>) => {
+    try {
+      // Submit form data to API
+      await addPlantSpecies.mutateAsync(data);
+      
+      // Clear form and close dialog on success
+      form.reset();
+      setShowAddSpeciesDialog(false);
+      
+      // Show success message
+      toast({
+        title: "Plant species added",
+        description: `${data.name} has been added to the plant catalog.`,
+        variant: "default",
+      });
+    } catch (error) {
+      // Show error message
+      toast({
+        title: "Error adding plant species",
+        description: "There was a problem adding the plant species. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="container mx-auto p-4 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
@@ -89,9 +173,18 @@ export default function PlantExplorer() {
           <Leaf className="mr-2 h-6 w-6 text-green-600" />
           Plant Explorer
         </h1>
-        <Button variant="outline" onClick={() => navigate('/')}>
-          <Home className="mr-2 h-4 w-4" /> Back to Dashboard
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={() => setShowAddSpeciesDialog(true)}
+            className="mr-2"
+            variant="secondary"
+          >
+            <PlusCircle className="mr-2 h-4 w-4" /> Add Species
+          </Button>
+          <Button variant="outline" onClick={() => navigate('/')}>
+            <Home className="mr-2 h-4 w-4" /> Back to Dashboard
+          </Button>
+        </div>
       </div>
       
       <div className="bg-card p-4 rounded-lg shadow-sm mb-6">
@@ -188,6 +281,274 @@ export default function PlantExplorer() {
           <Button onClick={resetFilters}>Clear Filters</Button>
         </div>
       )}
+
+      {/* Add Plant Species Dialog */}
+      <Dialog open={showAddSpeciesDialog} onOpenChange={setShowAddSpeciesDialog}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-2xl flex items-center">
+              <PlusCircle className="mr-2 h-5 w-5 text-green-600" />
+              Add New Plant Species
+            </DialogTitle>
+            <DialogDescription>
+              Add a new plant species to the catalog. Fill in as much information as you know.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Plant Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Monstera" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="scientificName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Scientific Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Monstera deliciosa" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="careLevel"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Care Level</FormLabel>
+                      <FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select care level" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="easy">Easy</SelectItem>
+                            <SelectItem value="moderate">Moderate</SelectItem>
+                            <SelectItem value="difficult">Difficult</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="wateringFrequency"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Watering Frequency (days)</FormLabel>
+                      <FormControl>
+                        <Input type="number" min="1" max="30" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="lightRequirements"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Light Requirements</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Bright indirect light" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="humidity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Humidity</FormLabel>
+                      <FormControl>
+                        <Input placeholder="High" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="toxicity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Toxicity</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Toxic to pets" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="soilType"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Soil Type</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Well-draining potting mix" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Image URL (optional)</FormLabel>
+                    <FormControl>
+                      <Input placeholder="https://example.com/plant-image.jpg" {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      Provide a URL to an image of this plant. If left empty, a generic silhouette will be used.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="The Monstera deliciosa is a popular houseplant with distinctive split leaves..."
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="family"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Family (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Araceae" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="origin"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Origin (optional)</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Central America" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
+              <FormField
+                control={form.control}
+                name="propagation"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Propagation (optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Can be propagated by stem cuttings in water or soil..."
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="commonIssues"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Common Issues (optional)</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="Yellow leaves may indicate overwatering..."
+                        className="min-h-[80px]"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => setShowAddSpeciesDialog(false)}
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  type="submit"
+                  disabled={addPlantSpecies.isPending}
+                >
+                  {addPlantSpecies.isPending ? 
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Adding...
+                    </> : 
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Plant Species
+                    </>
+                  }
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
 
       {/* Plant Details Dialog */}
       <Dialog open={!!selectedSpeciesId} onOpenChange={(open) => !open && setSelectedSpeciesId(null)}>
