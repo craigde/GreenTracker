@@ -97,7 +97,7 @@ export default function PlantExplorer() {
       <div className="bg-card p-4 rounded-lg shadow-sm mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-grow">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search for plants by name or description..."
               className="pl-10 w-full"
@@ -106,7 +106,7 @@ export default function PlantExplorer() {
             />
             {searchQuery && (
               <button 
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 onClick={() => setSearchQuery('')}
               >
                 <X className="h-4 w-4" />
@@ -236,9 +236,9 @@ export default function PlantExplorer() {
                   
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Badge className={`
-                      ${selectedSpecies.careLevel === 'easy' ? 'bg-green-100 text-green-800' : ''}
-                      ${selectedSpecies.careLevel === 'moderate' ? 'bg-yellow-100 text-yellow-800' : ''}
-                      ${selectedSpecies.careLevel === 'difficult' ? 'bg-red-100 text-red-800' : ''}
+                      ${selectedSpecies.careLevel === 'easy' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100' : ''}
+                      ${selectedSpecies.careLevel === 'moderate' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100' : ''}
+                      ${selectedSpecies.careLevel === 'difficult' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100' : ''}
                     `}>
                       {formatCareLevel(selectedSpecies.careLevel)} care
                     </Badge>
@@ -338,18 +338,18 @@ export default function PlantExplorer() {
                     <div className="font-medium">Every {selectedSpecies.wateringFrequency} days</div>
                   </div>
                   <div className="border rounded-lg p-3">
-                    <div className="text-sm text-gray-500 mb-1">Light</div>
+                    <div className="text-sm text-muted-foreground mb-1">Light</div>
                     <div className="font-medium">{selectedSpecies.lightRequirements}</div>
                   </div>
                   {selectedSpecies.humidity && (
                     <div className="border rounded-lg p-3">
-                      <div className="text-sm text-gray-500 mb-1">Humidity</div>
+                      <div className="text-sm text-muted-foreground mb-1">Humidity</div>
                       <div className="font-medium">{selectedSpecies.humidity}</div>
                     </div>
                   )}
                   {selectedSpecies.toxicity && (
                     <div className="border rounded-lg p-3">
-                      <div className="text-sm text-gray-500 mb-1">Toxicity</div>
+                      <div className="text-sm text-muted-foreground mb-1">Toxicity</div>
                       <div className="font-medium">{selectedSpecies.toxicity}</div>
                     </div>
                   )}
