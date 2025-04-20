@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ThemeProvider as NextThemesProvider, useTheme as useNextTheme } from "next-themes";
 
 type ThemeProviderProps = {
   children: React.ReactNode;
@@ -17,29 +17,33 @@ export function ThemeProvider({
   );
 }
 
-export const ThemeContext = createContext({ 
+type ThemeContextType = {
+  isDarkMode: boolean;
+  toggleDarkMode: () => void;
+};
+
+export const ThemeContext = createContext<ThemeContextType>({ 
   isDarkMode: false, 
   toggleDarkMode: () => {} 
 });
 
 export const ThemeConsumer = ({ children }: { children: React.ReactNode }) => {
+  const { theme, setTheme } = useNextTheme();
   const [isDarkMode, setIsDarkMode] = useState(false);
   
   useEffect(() => {
-    // Check if document is available (client-side only)
-    if (typeof document !== 'undefined') {
-      const isDark = document.documentElement.classList.contains('dark');
-      setIsDarkMode(isDark);
+    // Check if we're on client side and update the state based on the current theme
+    if (typeof window !== 'undefined') {
+      setIsDarkMode(theme === 'dark');
     }
-  }, []);
+  }, [theme]);
 
   const toggleDarkMode = () => {
-    const doc = document.documentElement;
-    doc.classList.toggle('dark');
-    setIsDarkMode(doc.classList.contains('dark'));
-    
-    // Store in localStorage
-    localStorage.setItem('theme', doc.classList.contains('dark') ? 'dark' : 'light');
+    if (theme === 'dark') {
+      setTheme('light');
+    } else {
+      setTheme('dark');
+    }
   };
 
   return (
