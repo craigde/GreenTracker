@@ -14,6 +14,7 @@ import { NavBar } from "@/components/layout/nav-bar";
 import { Header } from "@/components/layout/header";
 import { usePlants } from "@/hooks/use-plants";
 import { getPlantStatus } from "@/lib/plant-utils";
+import { ThemeProvider, ThemeConsumer } from "@/components/theme-provider";
 
 function AppNavBar() {
   const { plants, isLoading } = usePlants();
