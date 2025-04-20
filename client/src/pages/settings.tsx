@@ -332,7 +332,7 @@ export default function Settings() {
                     </p>
                   </div>
                   <Switch
-                    checked={(settings as NotificationSettingsResponse)?.enabled ?? false}
+                    checked={notificationSettings?.enabled ?? false}
                     onCheckedChange={(checked) => {
                       updateSettings({ enabled: checked });
                       toast({
@@ -361,10 +361,10 @@ export default function Settings() {
                           type="password"
                           value={pushoverAppToken}
                           onChange={(e) => setPushoverAppToken(e.target.value)}
-                          placeholder={(settings as NotificationSettingsResponse)?.pushoverAppToken ? "••••••••••••••••••••••••••••••" : "Enter your Pushover App Token"}
+                          placeholder={notificationSettings?.pushoverAppToken ? "••••••••••••••••••••••••••••••" : "Enter your Pushover App Token"}
                           className="mr-2"
                         />
-                        {(settings as NotificationSettingsResponse)?.pushoverAppToken && (
+                        {notificationSettings?.pushoverAppToken && (
                           <div className="text-green-500 flex items-center">
                             <CheckCircle className="h-4 w-4 mr-1" />
                             <span className="text-xs">Configured</span>
@@ -381,10 +381,10 @@ export default function Settings() {
                           type="password"
                           value={pushoverUserKey}
                           onChange={(e) => setPushoverUserKey(e.target.value)}
-                          placeholder={(settings as NotificationSettingsResponse)?.pushoverUserKey ? "••••••••••••••••••••••••••••••" : "Enter your Pushover User Key"}
+                          placeholder={notificationSettings?.pushoverUserKey ? "••••••••••••••••••••••••••••••" : "Enter your Pushover User Key"}
                           className="mr-2"
                         />
-                        {(settings as NotificationSettingsResponse)?.pushoverUserKey && (
+                        {notificationSettings?.pushoverUserKey && (
                           <div className="text-green-500 flex items-center">
                             <CheckCircle className="h-4 w-4 mr-1" />
                             <span className="text-xs">Configured</span>
@@ -438,7 +438,7 @@ export default function Settings() {
                             description: "Check your device for the test notification.",
                           });
                         }}
-                        disabled={isTesting || !(settings as NotificationSettingsResponse)?.pushoverAppToken || !(settings as NotificationSettingsResponse)?.pushoverUserKey || !(settings as NotificationSettingsResponse)?.enabled}
+                        disabled={isTesting || !notificationSettings?.pushoverAppToken || !notificationSettings?.pushoverUserKey || !notificationSettings?.enabled}
                       >
                         {isTesting ? (
                           <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -449,7 +449,7 @@ export default function Settings() {
                       </Button>
                     </div>
                     
-                    {(settings as NotificationSettingsResponse)?.enabled && (!(settings as NotificationSettingsResponse).pushoverAppToken || !(settings as NotificationSettingsResponse).pushoverUserKey) && (
+                    {notificationSettings?.enabled && (!notificationSettings.pushoverAppToken || !notificationSettings.pushoverUserKey) && (
                       <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-3 mt-2">
                         <div className="flex items-start">
                           <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-2" />
