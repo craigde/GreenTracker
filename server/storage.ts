@@ -489,7 +489,7 @@ export class MemStorage implements IStorage {
         propagation: "Stem cuttings",
         toxicity: "toxic to pets and humans",
         commonIssues: "Shriveled pearls indicate underwatering; mushy stems indicate overwatering; stretching indicates insufficient light.",
-        imageUrl: "/uploads/string-of-pearls.jpg"
+        imageUrl: "/uploads/string-of-pearls.svg"
       }
     ];
     
