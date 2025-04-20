@@ -17,8 +17,16 @@ export function usePlants() {
   // Fetch a single plant with watering history
   const useGetPlant = (id: number) => {
     return useQuery<Plant & { wateringHistory: any[] }>({
-      queryKey: ["/api/plants", id],
-      enabled: !!id
+      queryKey: [`/api/plants/${id}`],
+      enabled: !!id,
+      onSettled: (data, error) => {
+        if (data) {
+          console.log("Plant detail data retrieved:", data);
+        }
+        if (error) {
+          console.error("Error retrieving plant details:", error);
+        }
+      }
     });
   };
   

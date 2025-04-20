@@ -129,7 +129,10 @@ export default function PlantDetails() {
     );
   }
 
-  const plant = plantData;
+  console.log("Full plant data from API:", plantData);
+  
+  // Cast to any to avoid TypeScript errors since we know the data structure
+  const plant = plantData as any;
   
   // Add safety check for null values in date processing
   // If lastWatered is null or invalid, set it to today's date
@@ -138,8 +141,12 @@ export default function PlantDetails() {
     plant.lastWatered = new Date();
   }
   
-  const status = getPlantStatus(plant);
-  const statusText = getStatusText(plant);
+  // Ensure species and location are treated as strings
+  plant.species = plant.species || "";
+  plant.location = plant.location || "";
+  
+  const status = getPlantStatus(plant as Plant);
+  const statusText = getStatusText(plant as Plant);
 
   return (
     <div>
@@ -195,7 +202,7 @@ export default function PlantDetails() {
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Location</p>
-                <p className="font-medium">{plant.location}</p>
+                <p className="font-medium">{plant.location || "-"}</p>
               </div>
               <div>
                 <p className="text-gray-500 text-sm">Watering Frequency</p>
