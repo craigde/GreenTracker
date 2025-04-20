@@ -465,6 +465,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: errorMessage });
     }
   });
+
+  // Notification Settings endpoints
+  
+  // Get notification settings
+  apiRouter.get("/notification-settings", async (req: Request, res: Response) => {
+    try {
+      const settings = await dbStorage.getNotificationSettings();
+      // If no settings exist yet, return default values
+      if (!settings) {
+        return res.json({
+          id: null,
+          enabled: true,
+          pushoverAppToken: process.env.PUSHOVER_APP_TOKEN ? true : false, // Just return boolean indicating if token exists
+          pushoverUserKey: process.env.PUSHOVER_USER_KEY ? true : false, // Just return boolean indicating if key exists
+          lastUpdated: null
+        });
+      }
+      
+      // Don't expose actual tokens in the response for security reasons
+      // Just indicate whether they exist or not
+      res.json({
+        id: settings.id,
+        enabled: settings.enabled,
+        pushoverAppToken: !!settings.pushoverAppToken,
+        pushoverUserKey: !!settings.pushoverUserKey,
+        lastUpdated: settings.lastUpdated
+      });
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to fetch notification settings";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  // Update notification settings
+  apiRouter.post("/notification-settings", async (req: Request, res: Response) => {
+    try {
+      // Use partial schema to validate the update data
+      const updateSchema = insertNotificationSettingsSchema.partial();
+      const parsedData = updateSchema.safeParse(req.body);
+      
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid notification settings data", 
+          errors: parsedData.error.format()
+        });
+      }
+
+      const updatedSettings = await dbStorage.updateNotificationSettings(parsedData.data);
+      
+      // Don't expose actual tokens in the response for security reasons
+      res.json({
+        id: updatedSettings.id,
+        enabled: updatedSettings.enabled,
+        pushoverAppToken: !!updatedSettings.pushoverAppToken,
+        pushoverUserKey: !!updatedSettings.pushoverUserKey,
+        lastUpdated: updatedSettings.lastUpdated
+      });
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to update notification settings";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  // Test notification settings
+  apiRouter.post("/notification-settings/test", async (req: Request, res: Response) => {
+    try {
+      const sent = await sendWelcomeNotification();
+      
+      if (sent) {
+        res.json({ success: true, message: "Test notification sent successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to send test notification" });
+      }
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to send test notification";
+      res.status(500).json({ success: false, message: errorMessage });
+    }
+  });
   
   // Add API router to app
   app.use("/api", apiRouter);
