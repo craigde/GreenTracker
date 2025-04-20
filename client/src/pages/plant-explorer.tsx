@@ -58,17 +58,17 @@ export default function PlantExplorer() {
     name: z.string().min(1, "Plant name is required"),
     scientificName: z.string().min(1, "Scientific name is required"),
     description: z.string().min(1, "Description is required"),
-    origin: z.string().optional().nullable(),
-    family: z.string().optional().nullable(),
+    origin: z.string().min(0).optional().transform(val => val === "" ? null : val),
+    family: z.string().min(0).optional().transform(val => val === "" ? null : val),
     careLevel: z.enum(["easy", "moderate", "difficult"]),
     wateringFrequency: z.coerce.number().min(1, "Watering frequency is required"),
     lightRequirements: z.string().min(1, "Light requirements are required"),
-    humidity: z.string().optional().nullable(),
-    soilType: z.string().optional().nullable(),
-    toxicity: z.string().optional().nullable(),
-    propagation: z.string().optional().nullable(),
-    commonIssues: z.string().optional().nullable(),
-    imageUrl: z.string().optional().nullable(),
+    humidity: z.string().min(0).optional().transform(val => val === "" ? null : val),
+    soilType: z.string().min(0).optional().transform(val => val === "" ? null : val),
+    toxicity: z.string().min(0).optional().transform(val => val === "" ? null : val),
+    propagation: z.string().min(0).optional().transform(val => val === "" ? null : val),
+    commonIssues: z.string().min(0).optional().transform(val => val === "" ? null : val),
+    imageUrl: z.string().min(0).optional().transform(val => val === "" ? null : val),
   });
   
   // Form for adding new plant species
@@ -143,8 +143,21 @@ export default function PlantExplorer() {
   // Handle form submission
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
+      // Convert empty strings to null for optional fields
+      const formattedData = {
+        ...data,
+        origin: data.origin || null,
+        family: data.family || null,
+        humidity: data.humidity || null,
+        soilType: data.soilType || null,
+        toxicity: data.toxicity || null,
+        propagation: data.propagation || null,
+        commonIssues: data.commonIssues || null,
+        imageUrl: data.imageUrl || null
+      };
+      
       // Submit form data to API
-      await addPlantSpecies.mutateAsync(data);
+      await addPlantSpecies.mutateAsync(formattedData);
       
       // Clear form and close dialog on success
       form.reset();
@@ -157,6 +170,7 @@ export default function PlantExplorer() {
         variant: "default",
       });
     } catch (error) {
+      console.error("Error adding plant species:", error);
       // Show error message
       toast({
         title: "Error adding plant species",
@@ -384,7 +398,7 @@ export default function PlantExplorer() {
                     <FormItem>
                       <FormLabel>Humidity</FormLabel>
                       <FormControl>
-                        <Input placeholder="High" {...field} />
+                        <Input placeholder="High" {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -398,7 +412,7 @@ export default function PlantExplorer() {
                     <FormItem>
                       <FormLabel>Toxicity</FormLabel>
                       <FormControl>
-                        <Input placeholder="Toxic to pets" {...field} />
+                        <Input placeholder="Toxic to pets" {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -412,7 +426,7 @@ export default function PlantExplorer() {
                     <FormItem>
                       <FormLabel>Soil Type</FormLabel>
                       <FormControl>
-                        <Input placeholder="Well-draining potting mix" {...field} />
+                        <Input placeholder="Well-draining potting mix" {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -427,7 +441,7 @@ export default function PlantExplorer() {
                   <FormItem>
                     <FormLabel>Image URL (optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="https://example.com/plant-image.jpg" {...field} />
+                      <Input placeholder="https://example.com/plant-image.jpg" {...field} value={field.value || ""} />
                     </FormControl>
                     <FormDescription>
                       Provide a URL to an image of this plant. If left empty, a generic silhouette will be used.
@@ -463,7 +477,7 @@ export default function PlantExplorer() {
                     <FormItem>
                       <FormLabel>Family (optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Araceae" {...field} />
+                        <Input placeholder="Araceae" {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -477,7 +491,7 @@ export default function PlantExplorer() {
                     <FormItem>
                       <FormLabel>Origin (optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Central America" {...field} />
+                        <Input placeholder="Central America" {...field} value={field.value || ""} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -496,6 +510,7 @@ export default function PlantExplorer() {
                         placeholder="Can be propagated by stem cuttings in water or soil..."
                         className="min-h-[80px]"
                         {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
@@ -514,6 +529,7 @@ export default function PlantExplorer() {
                         placeholder="Yellow leaves may indicate overwatering..."
                         className="min-h-[80px]"
                         {...field}
+                        value={field.value || ""}
                       />
                     </FormControl>
                     <FormMessage />
