@@ -329,7 +329,7 @@ export class MemStorage implements IStorage {
         propagation: "Division during repotting",
         toxicity: "toxic to pets and humans",
         commonIssues: "Drooping indicates need for water; brown leaf tips from dry air or chemicals in water.",
-        imageUrl: "/uploads/peace-lily.jpg"
+        imageUrl: "/uploads/peace-lily.svg"
       },
       {
         name: "ZZ Plant",
@@ -345,7 +345,7 @@ export class MemStorage implements IStorage {
         propagation: "Leaf cuttings or division",
         toxicity: "toxic to pets and humans",
         commonIssues: "Yellowing leaves from overwatering; can go months without water.",
-        imageUrl: "/uploads/zz-plant.jpg"
+        imageUrl: "/uploads/zz-plant.svg"
       },
       {
         name: "Spider Plant",
@@ -361,7 +361,7 @@ export class MemStorage implements IStorage {
         propagation: "Plantlets/offsets",
         toxicity: "non-toxic",
         commonIssues: "Brown leaf tips from fluoride in water; avoid overwatering.",
-        imageUrl: "/uploads/spider-plant.jpg"
+        imageUrl: "/uploads/spider-plant.svg"
       },
       {
         name: "Fiddle Leaf Fig",
@@ -377,7 +377,7 @@ export class MemStorage implements IStorage {
         propagation: "Stem cuttings or air layering",
         toxicity: "toxic to pets",
         commonIssues: "Brown spots from overwatering; leaf drop from inconsistent care or drafts.",
-        imageUrl: "/uploads/fiddle-leaf-fig.jpg"
+        imageUrl: "/uploads/fiddle-leaf-fig.svg"
       },
       {
         name: "Monstera Deliciosa",
