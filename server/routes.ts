@@ -77,27 +77,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new plant
   apiRouter.post("/plants", async (req: Request, res: Response) => {
     try {
+      console.log("Received plant creation request with data:", req.body);
+      
       // Convert lastWatered string to Date if needed
-      let data = req.body;
+      let data = {...req.body};
       
       // Handle date conversion issue for lastWatered
-      if (data.lastWatered && typeof data.lastWatered === 'string') {
+      if (data.lastWatered) {
         try {
-          data = {
-            ...data,
-            lastWatered: new Date(data.lastWatered)
-          };
+          // Handle different date formats safely
+          if (typeof data.lastWatered === 'string') {
+            data.lastWatered = new Date(data.lastWatered);
+          } else if (data.lastWatered instanceof Date) {
+            // Already a Date object, ensure it's valid
+            if (isNaN(data.lastWatered.getTime())) {
+              throw new Error('Invalid date object');
+            }
+          } else if (data.lastWatered && typeof data.lastWatered === 'object') {
+            // Handle potential serialized date objects
+            data.lastWatered = new Date(data.lastWatered);
+          }
+          
+          console.log("Converted lastWatered to:", data.lastWatered);
         } catch (e) {
-          console.error("Date conversion error:", e);
+          console.error("Date conversion error:", e, data.lastWatered);
           return res.status(400).json({ 
             message: "Invalid date format for lastWatered", 
           });
         }
+      } else {
+        // Default to current date if missing
+        data.lastWatered = new Date();
+        console.log("Using default lastWatered:", data.lastWatered);
+      }
+      
+      // Ensure we have an imageUrl if specified
+      if (data.imageUrl) {
+        console.log("Using image URL:", data.imageUrl);
       }
       
       const parsedData = insertPlantSchema.safeParse(data);
       
       if (!parsedData.success) {
+        console.error("Validation errors:", parsedData.error.format());
         return res.status(400).json({ 
           message: "Invalid plant data", 
           errors: parsedData.error.format()
@@ -105,8 +127,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const newPlant = await dbStorage.createPlant(parsedData.data);
+      console.log("Plant created successfully:", newPlant);
       res.status(201).json(newPlant);
     } catch (error) {
+      console.error("Server error creating plant:", error);
       res.status(500).json({ message: "Failed to create plant" });
     }
   });
@@ -119,18 +143,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid plant ID" });
       }
 
+      console.log("Received plant update request for ID:", id, "with data:", req.body);
+      
       // Convert lastWatered string to Date if needed
-      let data = req.body;
+      let data = {...req.body};
       
       // Handle date conversion issue for lastWatered
-      if (data.lastWatered && typeof data.lastWatered === 'string') {
+      if (data.lastWatered) {
         try {
-          data = {
-            ...data,
-            lastWatered: new Date(data.lastWatered)
-          };
+          // Handle different date formats safely
+          if (typeof data.lastWatered === 'string') {
+            data.lastWatered = new Date(data.lastWatered);
+          } else if (data.lastWatered instanceof Date) {
+            // Already a Date object, ensure it's valid
+            if (isNaN(data.lastWatered.getTime())) {
+              throw new Error('Invalid date object');
+            }
+          } else if (data.lastWatered && typeof data.lastWatered === 'object') {
+            // Handle potential serialized date objects
+            data.lastWatered = new Date(data.lastWatered);
+          }
+          
+          console.log("Converted lastWatered to:", data.lastWatered);
         } catch (e) {
-          console.error("Date conversion error:", e);
+          console.error("Date conversion error:", e, data.lastWatered);
           return res.status(400).json({ 
             message: "Invalid date format for lastWatered", 
           });
@@ -142,6 +178,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const parsedData = updateSchema.safeParse(data);
       
       if (!parsedData.success) {
+        console.error("Validation errors:", parsedData.error.format());
         return res.status(400).json({ 
           message: "Invalid plant data", 
           errors: parsedData.error.format()
@@ -153,8 +190,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Plant not found" });
       }
 
+      console.log("Plant updated successfully:", updatedPlant);
       res.json(updatedPlant);
     } catch (error) {
+      console.error("Server error updating plant:", error);
       res.status(500).json({ message: "Failed to update plant" });
     }
   });

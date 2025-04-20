@@ -41,8 +41,14 @@ export const plants = pgTable("plants", {
   imageUrl: text("image_url"),
 });
 
+// Create base schema
 export const plantSchema = createInsertSchema(plants);
-export const insertPlantSchema = plantSchema.omit({ id: true });
+// Add custom validation for lastWatered to better handle different date formats
+export const insertPlantSchema = plantSchema
+  .omit({ id: true })
+  .extend({
+    lastWatered: z.date().or(z.string().transform((val) => new Date(val))),
+  });
 
 export type Plant = typeof plants.$inferSelect;
 export type InsertPlant = z.infer<typeof insertPlantSchema>;

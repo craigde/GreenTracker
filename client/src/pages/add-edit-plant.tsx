@@ -94,6 +94,7 @@ export default function AddEditPlant() {
     wateringFrequency: z.coerce.number().min(1, "Watering frequency is required"),
     lastWatered: z.string(),
     notes: z.string().optional(),
+    imageUrl: z.string().optional(),
   });
 
   // Form
@@ -192,30 +193,42 @@ export default function AddEditPlant() {
   };
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    console.log("Form submission values:", values);
+    console.log("Recommended plant:", recommendedPlant);
+    
     // Get the lastWatered date and ensure it's properly formatted
     const lastWateredDate = new Date(values.lastWatered);
+    console.log("Parsed lastWatered date:", lastWateredDate);
     
     // Convert string date to proper Date object for the API
     const processedValues = {
       ...values,
       // Explicitly create a new Date instance that Zod can validate
       lastWatered: lastWateredDate,
-      // Use the recommended plant's image URL as default if creating a new plant
-      ...((!isEditing && recommendedPlant?.imageUrl) && { imageUrl: recommendedPlant.imageUrl })
     };
+    
+    // Add imageUrl explicitly if this is a new plant from a recommended species
+    if (!isEditing && recommendedPlant?.imageUrl) {
+      processedValues.imageUrl = recommendedPlant.imageUrl;
+      console.log("Using recommended plant image URL:", recommendedPlant.imageUrl);
+    }
+    
+    console.log("Processed form values for submission:", processedValues);
     
     if (isEditing && plantId) {
       updatePlant.mutate(
         { id: plantId, data: processedValues },
         {
-          onSuccess: () => {
+          onSuccess: (result) => {
+            console.log("Plant updated successfully:", result);
             toast({
               title: "Plant updated",
               description: "Plant has been updated successfully.",
             });
             navigate(`/plants/${plantId}`);
           },
-          onError: () => {
+          onError: (error) => {
+            console.error("Error updating plant:", error);
             toast({
               title: "Failed to update plant",
               description: "Please try again.",
@@ -226,14 +239,16 @@ export default function AddEditPlant() {
       );
     } else {
       createPlant.mutate(processedValues, {
-        onSuccess: () => {
+        onSuccess: (result) => {
+          console.log("Plant created successfully:", result);
           toast({
             title: "Plant added",
             description: "New plant has been added successfully.",
           });
           navigate("/");
         },
-        onError: () => {
+        onError: (error) => {
+          console.error("Error creating plant:", error);
           toast({
             title: "Failed to add plant",
             description: "Please try again.",

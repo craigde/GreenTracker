@@ -27,21 +27,50 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  urlOrOptions: string | (RequestInit & { url?: string }),
-  options?: RequestInit,
+  urlOrOptions: string | (RequestInit & { url?: string; method?: string }),
+  pathOrOptions?: string | RequestInit,
+  data?: any,
 ): Promise<any> {
   let url: string;
-  let fetchOptions: RequestInit;
+  let fetchOptions: RequestInit = {};
+
+  // Handle different calling styles:
+  // 1. apiRequest({ url: '/endpoint', method: 'POST', body: JSON.stringify(data) })
+  // 2. apiRequest('/endpoint', { method: 'POST', body: JSON.stringify(data) })
+  // 3. apiRequest('POST', '/endpoint', data)
 
   if (typeof urlOrOptions === 'string') {
-    url = urlOrOptions;
-    fetchOptions = options || {};
+    if (typeof pathOrOptions === 'string') {
+      // Style 3: apiRequest('POST', '/endpoint', data)
+      const method = urlOrOptions;
+      url = pathOrOptions;
+      
+      fetchOptions.method = method;
+      
+      if (data) {
+        fetchOptions.headers = {
+          'Content-Type': 'application/json',
+          ...fetchOptions.headers,
+        };
+        fetchOptions.body = JSON.stringify(data);
+      }
+    } else {
+      // Style 2: apiRequest('/endpoint', { method: 'POST', body: JSON.stringify(data) })
+      url = urlOrOptions;
+      fetchOptions = pathOrOptions || {};
+    }
   } else {
-    // Extract url from the options and remove it from fetchOptions
-    const { url: optionsUrl, ...restOptions } = urlOrOptions;
+    // Style 1: apiRequest({ url: '/endpoint', method: 'POST', body: JSON.stringify(data) })
+    const { url: optionsUrl, method, ...restOptions } = urlOrOptions;
     url = optionsUrl || '';
-    fetchOptions = restOptions;
+    fetchOptions = { method, ...restOptions };
   }
+
+  console.log("API Request:", {
+    url,
+    method: fetchOptions.method || 'GET',
+    headers: fetchOptions.headers
+  });
 
   const res = await fetch(url, {
     ...fetchOptions,

@@ -27,11 +27,13 @@ export function usePlants() {
     mutationFn: async (plant: InsertPlant) => {
       try {
         console.log("Creating plant with data:", plant);
-        const res = await apiRequest("POST", "/api/plants", plant);
-        if (typeof res.json === 'function') {
-          return await res.json();
-        }
-        return res; // If already parsed as JSON by apiRequest
+        const res = await apiRequest({
+          url: "/api/plants", 
+          method: "POST", 
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(plant)
+        });
+        return res; // apiRequest handles JSON parsing
       } catch (error) {
         console.error("Error creating plant:", error);
         throw error;
@@ -48,36 +50,74 @@ export function usePlants() {
   // Update a plant
   const updatePlant = useMutation({
     mutationFn: async ({ id, data }: { id: number; data: Partial<InsertPlant> }) => {
-      const res = await apiRequest("PATCH", `/api/plants/${id}`, data);
-      return res.json();
+      try {
+        console.log("Updating plant with ID:", id, "with data:", data);
+        const res = await apiRequest({
+          url: `/api/plants/${id}`,
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
+        });
+        return res;
+      } catch (error) {
+        console.error("Error updating plant:", error);
+        throw error;
+      }
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["/api/plants"] });
       queryClient.invalidateQueries({ queryKey: ["/api/plants", variables.id] });
     },
+    onError: (error) => {
+      console.error("Plant update mutation error:", error);
+    }
   });
   
   // Delete a plant
   const deletePlant = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("DELETE", `/api/plants/${id}`);
-      return res.json();
+      try {
+        console.log("Deleting plant with ID:", id);
+        const res = await apiRequest({
+          url: `/api/plants/${id}`,
+          method: "DELETE"
+        });
+        return res;
+      } catch (error) {
+        console.error("Error deleting plant:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/plants"] });
     },
+    onError: (error) => {
+      console.error("Plant deletion mutation error:", error);
+    }
   });
   
   // Water a plant
   const waterPlant = useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest("POST", `/api/plants/${id}/water`);
-      return res.json();
+      try {
+        console.log("Watering plant with ID:", id);
+        const res = await apiRequest({
+          url: `/api/plants/${id}/water`,
+          method: "POST"
+        });
+        return res;
+      } catch (error) {
+        console.error("Error watering plant:", error);
+        throw error;
+      }
     },
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ["/api/plants"] });
       queryClient.invalidateQueries({ queryKey: ["/api/plants", id] });
     },
+    onError: (error) => {
+      console.error("Plant watering mutation error:", error);
+    }
   });
   
   // Upload an image for a plant
