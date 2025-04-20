@@ -146,20 +146,20 @@ export default function PlantExplorer() {
         <div className="py-12 flex justify-center">
           <div className="flex flex-col items-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mb-4"></div>
-            <p className="text-gray-500">Loading plant catalog...</p>
+            <p className="text-muted-foreground">Loading plant catalog...</p>
           </div>
         </div>
       ) : isError ? (
         <div className="py-12 text-center">
           <AlertTriangle className="h-12 w-12 mx-auto text-amber-500 mb-4" />
           <h3 className="text-xl font-medium mb-2">Error loading plant catalog</h3>
-          <p className="text-gray-500 mb-4">There was a problem loading the plant database.</p>
+          <p className="text-muted-foreground mb-4">There was a problem loading the plant database.</p>
           <Button onClick={() => window.location.reload()}>Try Again</Button>
         </div>
       ) : filteredSpecies && filteredSpecies.length > 0 ? (
         <>
           <div className="mb-4 flex justify-between items-center">
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               Showing {filteredSpecies.length} {filteredSpecies.length === 1 ? 'plant' : 'plants'}
               {careLevel && <span> with <strong>{formatCareLevel(careLevel)}</strong> care level</span>}
               {searchQuery && <span> matching <strong>"{searchQuery}"</strong></span>}
@@ -200,7 +200,7 @@ export default function PlantExplorer() {
             <div className="py-8 flex justify-center">
               <div className="flex flex-col items-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-700 mb-4"></div>
-                <p className="text-gray-500">Loading plant details...</p>
+                <p className="text-muted-foreground">Loading plant details...</p>
               </div>
             </div>
           </DialogContent>

@@ -47,7 +47,7 @@ export function PlantSpeciesCard({ species, onSelect }: PlantSpeciesCardProps) {
         <CardTitle className="text-xl font-semibold line-clamp-1">
           {species.name}
         </CardTitle>
-        <div className="text-sm italic text-gray-500 line-clamp-1 mt-1">
+        <div className="text-sm italic text-muted-foreground line-clamp-1 mt-1">
           {species.scientificName}
         </div>
       </CardHeader>
@@ -62,7 +62,7 @@ export function PlantSpeciesCard({ species, onSelect }: PlantSpeciesCardProps) {
               : `Water every ${species.wateringFrequency} days`}
           </Badge>
         </div>
-        <p className="text-sm text-gray-600 line-clamp-3">
+        <p className="text-sm text-muted-foreground line-clamp-3">
           {species.description}
         </p>
       </CardContent>
