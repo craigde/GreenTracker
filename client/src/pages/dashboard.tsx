@@ -67,10 +67,10 @@ export default function Dashboard() {
       </header>
 
       {plants.length === 0 ? (
-        <div className="text-center py-12 px-4 bg-gray-50 rounded-xl shadow-sm">
+        <div className="text-center py-12 px-4 bg-card rounded-xl shadow-sm">
           <div className="text-6xl mb-4 emoji-xl">🪴</div>
-          <h3 className="text-xl font-bold text-gray-800 mb-2">No plants yet!</h3>
-          <p className="text-gray-500 mb-6 max-w-md mx-auto">
+          <h3 className="text-xl font-bold mb-2">No plants yet!</h3>
+          <p className="text-muted-foreground mb-6 max-w-md mx-auto">
             Add your first plant to PlantDaddy and never forget to water your green friends again.
           </p>
           <Button onClick={handleAddPlant} className="bg-primary hover:bg-primary/90 text-white font-medium px-6">

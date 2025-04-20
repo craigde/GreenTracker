@@ -94,7 +94,7 @@ export default function PlantExplorer() {
         </Button>
       </div>
       
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
+      <div className="bg-card p-4 rounded-lg shadow-sm mb-6">
         <div className="flex flex-col md:flex-row gap-4">
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 h-4 w-4" />
@@ -178,11 +178,11 @@ export default function PlantExplorer() {
         </>
       ) : (
         <div className="py-12 text-center">
-          <div className="mx-auto w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mb-4">
-            <Leaf className="h-8 w-8 text-gray-400" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
+            <Leaf className="h-8 w-8 text-muted-foreground" />
           </div>
           <h3 className="text-xl font-medium mb-2">No plants found</h3>
-          <p className="text-gray-500 mb-4">
+          <p className="text-muted-foreground mb-4">
             No plants match your search criteria. Try adjusting your filters.
           </p>
           <Button onClick={resetFilters}>Clear Filters</Button>
@@ -357,7 +357,7 @@ export default function PlantExplorer() {
               </div>
             </ScrollArea>
             
-            <DialogFooter className="absolute bottom-0 left-0 right-0 bg-white p-4 border-t">
+            <DialogFooter className="absolute bottom-0 left-0 right-0 bg-card p-4 border-t">
               <Button 
                 onClick={() => setSelectedSpeciesId(null)}
                 variant="outline"
