@@ -409,7 +409,7 @@ export class MemStorage implements IStorage {
         propagation: "Stem cuttings or air layering",
         toxicity: "toxic to pets",
         commonIssues: "Leaf drop from overwatering or cold drafts; dusty leaves reduce growth.",
-        imageUrl: "/uploads/rubber-plant.svg"
+        imageUrl: "/uploads/rubber-plant-fix.svg"
       },
       {
         name: "Aloe Vera",
@@ -441,7 +441,7 @@ export class MemStorage implements IStorage {
         propagation: "Division or spores",
         toxicity: "non-toxic",
         commonIssues: "Brown fronds from low humidity; yellowing from overwatering.",
-        imageUrl: "/uploads/boston-fern.svg"
+        imageUrl: "/uploads/boston-fern-fix.svg"
       },
       {
         name: "Chinese Money Plant",
@@ -457,7 +457,7 @@ export class MemStorage implements IStorage {
         propagation: "Offsets/pups",
         toxicity: "non-toxic",
         commonIssues: "Curling leaves from too much light; leggy growth from insufficient light.",
-        imageUrl: "/uploads/chinese-money-plant.svg"
+        imageUrl: "/uploads/chinese-money-plant-fix.svg"
       },
       {
         name: "Calathea",
@@ -473,7 +473,7 @@ export class MemStorage implements IStorage {
         propagation: "Division during repotting",
         toxicity: "non-toxic",
         commonIssues: "Crispy edges from low humidity; brown spots from tap water minerals; curling from underwatering.",
-        imageUrl: "/uploads/calathea.svg"
+        imageUrl: "/uploads/calathea-fix.svg"
       },
       {
         name: "String of Pearls",
