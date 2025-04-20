@@ -372,7 +372,8 @@ export default function PlantExplorer() {
                   const params = new URLSearchParams({
                     name: selectedSpecies.name,
                     species: selectedSpecies.scientificName,
-                    wateringFrequency: selectedSpecies.wateringFrequency.toString()
+                    wateringFrequency: selectedSpecies.wateringFrequency.toString(),
+                    imageUrl: selectedSpecies.imageUrl || ''
                   });
                   navigate(`/plants/new?${params.toString()}`);
                 }}

@@ -55,12 +55,14 @@ export default function AddEditPlant() {
     const name = searchParams.get('name');
     const species = searchParams.get('species');
     const wateringFrequencyStr = searchParams.get('wateringFrequency');
+    const imageUrl = searchParams.get('imageUrl');
     
-    if (name || species || wateringFrequencyStr) {
+    if (name || species || wateringFrequencyStr || imageUrl) {
       return {
         name: name || '',
         species: species || '',
-        wateringFrequency: wateringFrequencyStr ? parseInt(wateringFrequencyStr, 10) : 7
+        wateringFrequency: wateringFrequencyStr ? parseInt(wateringFrequencyStr, 10) : 7,
+        imageUrl: imageUrl || ''
       };
     }
     return undefined;
@@ -116,8 +118,11 @@ export default function AddEditPlant() {
       if (plantData.imageUrl) {
         setImagePreview(plantData.imageUrl);
       }
+    } else if (!isEditing && recommendedPlant?.imageUrl) {
+      // Set the species image as preview for new plants
+      setImagePreview(recommendedPlant.imageUrl);
     }
-  }, [isEditing, plantData, form]);
+  }, [isEditing, plantData, recommendedPlant, form]);
   
   // Update form with recommended plant data when locations are loaded
   useEffect(() => {
@@ -183,7 +188,9 @@ export default function AddEditPlant() {
     // Convert string date to Date object for the API
     const processedValues = {
       ...values,
-      lastWatered: new Date(values.lastWatered)
+      lastWatered: new Date(values.lastWatered),
+      // Use the recommended plant's image URL as default if creating a new plant
+      ...((!isEditing && recommendedPlant?.imageUrl) && { imageUrl: recommendedPlant.imageUrl })
     };
     
     if (isEditing && plantId) {
@@ -290,25 +297,26 @@ export default function AddEditPlant() {
                   )}
                 />
                 
-                {isEditing && (
-                  <div className="space-y-4">
-                    <FormLabel>Plant Image (Optional)</FormLabel>
-                    <div className="flex flex-col items-center gap-4 sm:flex-row">
-                      <div className="flex flex-col items-center gap-2">
-                        <Avatar className="size-24 rounded-md">
-                          {imagePreview ? (
-                            <AvatarImage src={imagePreview} alt="Plant image" className="object-cover" />
-                          ) : (
-                            <AvatarFallback className="rounded-md bg-muted">
-                              <Image className="size-10 text-muted-foreground" />
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <div className="text-xs text-gray-500">
-                          {imagePreview ? "Current image" : "No image"}
-                        </div>
+                <div className="space-y-4">
+                  <FormLabel>Plant Image {isEditing ? "(Optional)" : ""}</FormLabel>
+                  <div className="flex flex-col items-center gap-4 sm:flex-row">
+                    <div className="flex flex-col items-center gap-2">
+                      <Avatar className="size-24 rounded-md">
+                        {imagePreview ? (
+                          <AvatarImage src={imagePreview} alt="Plant image" className="object-cover" />
+                        ) : (
+                          <AvatarFallback className="rounded-md bg-muted">
+                            <Image className="size-10 text-muted-foreground" />
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                      <div className="text-xs text-gray-500">
+                        {imagePreview && !isEditing ? "Species image" : 
+                         imagePreview ? "Current image" : "No image"}
                       </div>
-                      
+                    </div>
+                    
+                    {isEditing && (
                       <div className="flex flex-col gap-2 w-full">
                         <Label htmlFor="plant-image" className="sr-only">
                           Choose image
@@ -337,9 +345,14 @@ export default function AddEditPlant() {
                           Upload Image
                         </Button>
                       </div>
-                    </div>
+                    )}
                   </div>
-                )}
+                  {!isEditing && imagePreview && (
+                    <div className="text-sm text-gray-600">
+                      This species image will be used as the default. You can replace it with your own image later.
+                    </div>
+                  )}
+                </div>
 
                 <FormField
                   control={form.control}
