@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 1500, // Auto-dismiss after 1.5 seconds
       });
     },
     onError: (error: Error) => {
@@ -112,7 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login failed",
         description: errorMessage,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds (longer for error messages)
+        duration: 2500, // Auto-dismiss after 2.5 seconds (still longer for error messages)
       });
     },
   });
@@ -165,7 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Registration successful",
         description: `Welcome to PlantDaddy, ${user.username}!`,
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 1500, // Auto-dismiss after 1.5 seconds
       });
     },
     onError: (error: Error) => {
@@ -182,7 +182,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration failed",
         description: errorMessage,
         variant: "destructive",
-        duration: 5000, // Auto-dismiss after 5 seconds (longer for error messages)
+        duration: 2500, // Auto-dismiss after 2.5 seconds (still longer for error messages)
       });
     },
   });
@@ -216,7 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({
         title: "Logged out",
         description: "You've been successfully logged out.",
-        duration: 3000, // Auto-dismiss after 3 seconds
+        duration: 1500, // Auto-dismiss after 1.5 seconds
       });
     },
     onError: (error) => {
