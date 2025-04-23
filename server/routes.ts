@@ -1,6 +1,6 @@
 import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
-import { storage as dbStorage } from "./storage";
+import { storage as dbStorage } from "./multi-user-storage";
 import { z } from "zod";
 import { insertPlantSchema, insertLocationSchema, insertPlantSpeciesSchema, insertNotificationSettingsSchema, insertUserSchema } from "@shared/schema";
 import multer from "multer";
@@ -9,6 +9,7 @@ import fs from "fs";
 import { sendPlantWateringNotification, sendWelcomeNotification, checkPlantsAndSendNotifications, sendPushoverNotification } from "./notifications";
 import { setupAuth, hashPassword } from "./auth";
 import passport from "passport";
+import { setUserContext } from "./user-context";
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
@@ -709,6 +710,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Add API router to app
+  // Apply user context middleware before API routes to make user data available
+  app.use(setUserContext);
+  
+  // Mount API routes
   app.use("/api", apiRouter);
 
   const httpServer = createServer(app);
