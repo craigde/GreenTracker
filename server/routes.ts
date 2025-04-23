@@ -79,36 +79,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Log the user in
-      req.login(user, (err) => {
-        if (err) {
-          return res.status(500).json({ error: "Failed to log in after registration" });
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Post-registration login error:", loginErr);
+          return res.status(500).json({ 
+            error: "Failed to log in after registration",
+            details: loginErr.message
+          });
         }
+        
+        // Return consistent user data format
         return res.status(201).json({
           id: user.id,
-          username: user.username
+          username: user.username,
+          // Add any other non-sensitive user data here
         });
       });
     } catch (error) {
       console.error("Registration error:", error);
-      res.status(400).json({ error: "Invalid registration data" });
+      
+      // Check for specific error types and provide more helpful messages
+      const errorMessage = error instanceof Error ? error.message : "Invalid registration data";
+      
+      if (errorMessage.includes("already exists")) {
+        return res.status(409).json({ error: "Username already exists" });
+      }
+      
+      // Generic error case
+      res.status(400).json({ 
+        error: "Registration failed",
+        details: errorMessage
+      });
     }
   });
   
   apiRouter.post("/login", (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate("local", (err, user, info) => {
       if (err) {
-        return next(err);
+        console.error("Login error:", err);
+        return res.status(500).json({ error: "Internal server error" });
       }
+      
       if (!user) {
-        return res.status(401).json({ error: info?.message || "Invalid credentials" });
+        return res.status(401).json({ 
+          error: info?.message || "Invalid username or password" 
+        });
       }
-      req.login(user, (err) => {
-        if (err) {
-          return next(err);
+      
+      req.login(user, (loginErr) => {
+        if (loginErr) {
+          console.error("Login session error:", loginErr);
+          return res.status(500).json({ error: "Failed to create session" });
         }
-        return res.json({
+        
+        // Return consistent user data format
+        return res.status(200).json({
           id: user.id,
-          username: user.username
+          username: user.username,
+          // Add any other non-sensitive user data here
         });
       });
     })(req, res, next);
@@ -117,15 +145,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.post("/logout", (req: Request, res: Response) => {
     // First check if user is logged in
     if (!req.isAuthenticated()) {
-      return res.status(200).send("Not logged in");
+      // Still return a success response, just with a different message
+      return res.status(200).json({ 
+        success: true,
+        message: "Already logged out" 
+      });
     }
     
     req.logout((err) => {
       if (err) {
         console.error("Logout error:", err);
-        return res.status(500).send("Failed to log out");
+        return res.status(500).json({ 
+          error: "Failed to log out",
+          details: err.message
+        });
       }
-      res.status(200).send("Logged out successfully");
+      
+      // Return consistent response format
+      res.status(200).json({
+        success: true,
+        message: "Logged out successfully"
+      });
     });
   });
   

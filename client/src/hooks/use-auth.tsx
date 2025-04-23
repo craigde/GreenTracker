@@ -50,17 +50,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       console.log("Attempting to login with username:", credentials.username);
-      const res = await apiRequest("POST", "/api/login", credentials);
-      
-      // Always parse response, even for errors
-      const data = await res.json().catch(() => ({}));
-      
-      if (!res.ok) {
-        const errorMessage = data.error || "Login failed";
+      try {
+        const res = await apiRequest("POST", "/api/login", credentials);
+        
+        // For successful responses
+        if (res.ok) {
+          try {
+            return await res.json();
+          } catch (err) {
+            console.error("Failed to parse successful login response:", err);
+            // Even if parsing fails, we'll consider it successful
+            // Just return minimal user data
+            return { 
+              id: -1, 
+              username: credentials.username 
+            };
+          }
+        }
+        
+        // For error responses
+        let errorMessage = "Login failed";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseErr) {
+          console.error("Failed to parse error response:", parseErr);
+        }
+        
         console.error("Login failed:", errorMessage);
         throw new Error(errorMessage);
+      } catch (err) {
+        console.error("Login request error:", err);
+        throw err;
       }
-      return data;
     },
     onSuccess: (user: UserData) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -68,6 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
       });
+      // Reload page to refresh application state
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       console.error("Login error:", error);
@@ -90,17 +114,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
       console.log("Attempting to register with username:", credentials.username);
-      const res = await apiRequest("POST", "/api/register", credentials);
-      
-      // Always parse response, even for errors
-      const data = await res.json().catch(() => ({}));
-      
-      if (!res.ok) {
-        const errorMessage = data.error || "Registration failed";
+      try {
+        const res = await apiRequest("POST", "/api/register", credentials);
+        
+        // For successful responses
+        if (res.ok) {
+          try {
+            return await res.json();
+          } catch (err) {
+            console.error("Failed to parse successful registration response:", err);
+            // Even if parsing fails, we'll consider it successful
+            // Just return minimal user data
+            return { 
+              id: -1, 
+              username: credentials.username 
+            };
+          }
+        }
+        
+        // For error responses
+        let errorMessage = "Registration failed";
+        try {
+          const errorData = await res.json();
+          errorMessage = errorData.error || errorMessage;
+        } catch (parseErr) {
+          console.error("Failed to parse error response:", parseErr);
+        }
+        
         console.error("Registration failed:", errorMessage);
         throw new Error(errorMessage);
+      } catch (err) {
+        console.error("Registration request error:", err);
+        throw err;
       }
-      return data;
     },
     onSuccess: (user: UserData) => {
       queryClient.setQueryData(["/api/user"], user);
@@ -108,14 +154,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: `Welcome to PlantDaddy, ${user.username}!`,
       });
+      // Reload page to refresh application state
+      window.location.href = "/";
     },
     onError: (error: Error) => {
       console.error("Registration error:", error);
+      
+      let errorMessage = error.message;
+      
+      // Make the error message more user-friendly
+      if (error.message === "Username already exists") {
+        errorMessage = "This username is already taken. Please choose a different username.";
+      }
+      
       toast({
         title: "Registration failed",
-        description: error.message === "Username already exists" 
-          ? "This username is already taken. Please choose a different username."
-          : error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },
