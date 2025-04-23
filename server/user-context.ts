@@ -9,11 +9,18 @@ export const userContextStorage = new AsyncLocalStorage<UserContext>();
 
 // Middleware to set user context from the session
 export function setUserContext(req: any, res: any, next: any) {
-  // Default to null for unauthenticated users
-  const userId = req.isAuthenticated() ? req.user?.id || null : null;
-  
-  // Store user context
-  userContextStorage.run({ userId }, next);
+  try {
+    // Default to null for unauthenticated users
+    const userId = req.isAuthenticated() ? req.user?.id || null : null;
+    
+    // Store user context
+    userContextStorage.run({ userId }, () => {
+      next();
+    });
+  } catch (error) {
+    console.error("Error in user context middleware:", error);
+    next();
+  }
 }
 
 // Helper to get the current user's ID
