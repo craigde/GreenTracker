@@ -72,23 +72,68 @@ export async function apiRequest(
     headers: fetchOptions.headers
   });
 
-  const res = await fetch(url, {
-    ...fetchOptions,
-    headers: {
-      ...fetchOptions.headers,
-    },
-    credentials: "include",
-  });
-
-  await throwIfResNotOk(res);
-  
-  // Try to parse as JSON, fallback to text if it fails
   try {
-    const data = await res.json();
-    return data;
-  } catch (e) {
-    // If the response is not JSON, just return the raw response
-    return res;
+    const res = await fetch(url, {
+      ...fetchOptions,
+      headers: {
+        ...fetchOptions.headers,
+      },
+      credentials: "include",
+    });
+
+    console.log("API Response status:", res.status);
+    
+    // Check if the response is ok (status in the range 200-299)
+    if (!res.ok) {
+      // Try to extract error message from server response
+      let errorMessage = `Error: ${res.status} ${res.statusText}`;
+      try {
+        const errorData = await res.json();
+        if (errorData && typeof errorData === 'object') {
+          if ('error' in errorData) {
+            errorMessage = errorData.error;
+          } else if ('message' in errorData) {
+            errorMessage = errorData.message;
+          }
+        }
+        console.error('API Error Response:', errorData);
+      } catch (parseErr) {
+        // If JSON parsing fails, try to get the response text
+        try {
+          const errorText = await res.text();
+          if (errorText && errorText.trim()) {
+            errorMessage = errorText;
+          }
+          console.error('API Error Response (text):', errorText);
+        } catch (textErr) {
+          console.error('Failed to parse error response:', textErr);
+        }
+      }
+
+      // Throw a formatted error with the extracted message
+      throw new Error(errorMessage);
+    }
+    
+    // For successful responses, try to parse as JSON
+    try {
+      const data = await res.json();
+      return data;
+    } catch (e) {
+      console.log('Response is not JSON, returning raw response');
+      // If the response is not JSON, just return the raw response
+      return res;
+    }
+  } catch (networkError) {
+    // Handle network errors (e.g., connection refused, timeout, etc.)
+    console.error('Network error during API request:', networkError);
+    
+    if (networkError instanceof Error) {
+      // If it's already an Error object (like from above), just rethrow it
+      throw networkError;
+    } else {
+      // If it's some other type, wrap it in an Error
+      throw new Error(`Network error: ${String(networkError)}`);
+    }
   }
 }
 
@@ -102,16 +147,70 @@ export const getQueryFn: <T>(options: {
     // Use provided path or first query key as URL
     const url = path || queryKey[0] as string;
     
-    const res = await fetch(url, {
-      credentials: "include",
-    });
+    try {
+      const res = await fetch(url, {
+        credentials: "include",
+      });
+      
+      console.log(`Query response for ${url}: status ${res.status}`);
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+      // Handle 401 Unauthorized based on the provided behavior
+      if (res.status === 401) {
+        if (unauthorizedBehavior === "returnNull") {
+          console.log(`Returning null for 401 response on ${url}`);
+          return null;
+        } else {
+          throw new Error("Unauthorized");
+        }
+      }
+
+      // Handle other error responses
+      if (!res.ok) {
+        // Try to extract error message from server response
+        let errorMessage = `Error: ${res.status} ${res.statusText}`;
+        try {
+          const errorData = await res.json();
+          if (errorData && typeof errorData === 'object') {
+            if ('error' in errorData) {
+              errorMessage = errorData.error;
+            } else if ('message' in errorData) {
+              errorMessage = errorData.message;
+            }
+          }
+          console.error('Query Error Response:', errorData);
+        } catch (parseErr) {
+          // If JSON parsing fails, try to get the response text
+          try {
+            const errorText = await res.text();
+            if (errorText && errorText.trim()) {
+              errorMessage = errorText;
+            }
+            console.error('Query Error Response (text):', errorText);
+          } catch (textErr) {
+            console.error('Failed to parse error response:', textErr);
+          }
+        }
+
+        throw new Error(errorMessage);
+      }
+      
+      // Parse successful responses
+      try {
+        const data = await res.json();
+        return data;
+      } catch (parseErr) {
+        console.error(`Failed to parse JSON response from ${url}:`, parseErr);
+        return null; // Return null for non-JSON responses
+      }
+    } catch (networkError) {
+      // Handle network errors
+      console.error(`Network error during query to ${url}:`, networkError);
+      if (networkError instanceof Error) {
+        throw networkError;
+      } else {
+        throw new Error(`Network error: ${String(networkError)}`);
+      }
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({
