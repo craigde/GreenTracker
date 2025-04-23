@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, unique, primaryKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -19,8 +19,13 @@ export type User = typeof users.$inferSelect;
 // Locations table
 export const locations = pgTable("locations", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
+  name: text("name").notNull(),
   isDefault: boolean("is_default").default(false),
+  userId: integer("user_id").references(() => users.id).notNull(),
+}, (table) => {
+  return {
+    locationUserName: unique("location_user_name_idx").on(table.name, table.userId),
+  };
 });
 
 export const locationSchema = createInsertSchema(locations);
@@ -39,6 +44,7 @@ export const plants = pgTable("plants", {
   lastWatered: timestamp("last_watered").notNull(),
   notes: text("notes"),
   imageUrl: text("image_url"),
+  userId: integer("user_id").references(() => users.id).notNull(),
 });
 
 // Create base schema
@@ -58,6 +64,7 @@ export const wateringHistory = pgTable("watering_history", {
   id: serial("id").primaryKey(),
   plantId: integer("plant_id").notNull(),
   wateredAt: timestamp("watered_at").notNull(),
+  userId: integer("user_id").references(() => users.id).notNull(),
 });
 
 export const wateringHistorySchema = createInsertSchema(wateringHistory);
@@ -94,6 +101,7 @@ export type InsertPlantSpecies = z.infer<typeof insertPlantSpeciesSchema>;
 // Notification settings
 export const notificationSettings = pgTable("notification_settings", {
   id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id).notNull().unique(), // Each user has one settings record
   enabled: boolean("enabled").notNull().default(true),
   pushoverAppToken: text("pushover_app_token"),
   pushoverUserKey: text("pushover_user_key"),
