@@ -96,11 +96,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Login successful",
         description: `Welcome back, ${user.username}!`,
       });
-      
-      // Redirect to home page
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 300); // Small delay to allow toast to appear
     },
     onError: (error: Error) => {
       console.error("Login error:", error);
@@ -169,11 +164,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Registration successful",
         description: `Welcome to PlantDaddy, ${user.username}!`,
       });
-      
-      // Redirect to home page
-      setTimeout(() => {
-        window.location.href = "/";
-      }, 300); // Small delay to allow toast to appear
     },
     onError: (error: Error) => {
       console.error("Registration error:", error);
@@ -223,9 +213,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Logged out",
         description: "You've been successfully logged out."
       });
-      
-      // Force redirect to auth page
-      window.location.href = "/auth";
     },
     onError: (error) => {
       console.error("Logout error:", error);
@@ -233,9 +220,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Even if server-side logout fails, we can force client-side logout
       queryClient.setQueryData(["/api/user"], null);
       queryClient.invalidateQueries();
-      
-      // Still redirect to auth page
-      window.location.href = "/auth";
       
       // Don't show error toast since we're still effectively logging out
     }
