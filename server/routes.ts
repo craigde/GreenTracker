@@ -115,11 +115,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   apiRouter.post("/logout", (req: Request, res: Response) => {
+    // First check if user is logged in
+    if (!req.isAuthenticated()) {
+      return res.status(200).send("Not logged in");
+    }
+    
     req.logout((err) => {
       if (err) {
-        return res.status(500).json({ error: "Failed to log out" });
+        console.error("Logout error:", err);
+        return res.status(500).send("Failed to log out");
       }
-      res.status(200).json({ message: "Logged out successfully" });
+      res.status(200).send("Logged out successfully");
     });
   });
   

@@ -100,9 +100,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logoutMutation = useMutation({
     mutationFn: async () => {
       const res = await apiRequest("POST", "/api/logout");
+      // Don't try to parse response on success since we don't need the data
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Logout failed");
+        try {
+          const data = await res.json();
+          throw new Error(data.error || "Logout failed");
+        } catch (e) {
+          throw new Error("Logout failed: " + res.statusText);
+        }
       }
     },
     onSuccess: () => {
@@ -113,8 +118,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title: "Logged out",
         description: "You've been successfully logged out.",
       });
+      // Force redirect to auth page
+      window.location.href = "/auth";
     },
     onError: (error: Error) => {
+      console.error("Logout error:", error);
       toast({
         title: "Logout failed",
         description: error.message,
