@@ -233,94 +233,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      console.log("Attempting to logout");
+      console.log("Starting simple logout process");
       
-      // Make API request
-      const res = await apiRequest("POST", "/api/logout");
-      console.log("Logout response status:", res.status);
+      // Make a simple fetch request instead of using the apiRequest function
+      const response = await fetch("/api/logout", {
+        method: "POST",
+        credentials: "include" // Important for cookies/session
+      });
       
-      // For successful responses (status 2xx)
-      if (res.ok) {
-        // Try to parse JSON, but don't fail if it's not JSON
-        let responseData: any = { success: true };
-        const text = await res.text();
-        
-        console.log("Logout response text:", text);
-        
-        if (text && text.trim()) {
-          try {
-            // Only try to parse as JSON if it looks like JSON
-            if (text.trim().startsWith('{')) {
-              responseData = JSON.parse(text);
-              console.log("Parsed logout response:", responseData);
-            }
-          } catch (parseErr) {
-            console.warn("Failed to parse logout response as JSON:", parseErr);
-            // Keep the default success value
-          }
-        }
-        
-        // Success case - return the data or a default success object
-        return responseData;
-      }
+      console.log("Logout response status:", response.status);
       
-      // Handle error responses
-      let errorMessage = "Logout failed";
-      try {
-        const text = await res.text();
-        console.error("Error response text:", text);
-        
-        if (text && text.trim()) {
-          if (text.trim().startsWith('{')) {
-            const errorData = JSON.parse(text);
-            if (errorData && 'error' in errorData) {
-              errorMessage = errorData.error;
-            }
-          }
-        }
-      } catch (parseErr) {
-        console.error("Failed to parse error response:", parseErr);
-      }
-      
-      // Throw with appropriate error message
-      throw new Error(errorMessage || "Logout failed: " + res.statusText);
+      // Any response is considered success for logout
+      // We'll clear the user session on the client side regardless
+      return true;
     },
-    onSuccess: (data: any) => {
-      console.log("Logout successful, received data:", data);
+    onSuccess: () => {
+      console.log("Logout completed, clearing session data");
       
       // Clear user data from cache
       queryClient.setQueryData(["/api/user"], null);
       
-      // Invalidate all queries to force refetch when logged in again
+      // Invalidate all queries
       queryClient.invalidateQueries();
       
       // Show success message
-      let message = "You've been successfully logged out.";
-      
-      // Try to use server message if available
-      if (data && typeof data === 'object' && 'message' in data) {
-        message = data.message as string;
-      }
-      
       toast({
         title: "Logged out",
-        description: message,
+        description: "You've been successfully logged out."
       });
       
       // Force redirect to auth page
-      setTimeout(() => {
-        window.location.href = "/auth";
-      }, 500); // Small delay to ensure toast is seen
+      window.location.href = "/auth";
     },
-    onError: (error: Error) => {
+    onError: (error) => {
       console.error("Logout error:", error);
       
-      toast({
-        title: "Logout failed",
-        description: error.message || "Could not complete logout process.",
-        variant: "destructive",
-      });
-    },
+      // Even if server-side logout fails, we can force client-side logout
+      queryClient.setQueryData(["/api/user"], null);
+      queryClient.invalidateQueries();
+      
+      // Still redirect to auth page
+      window.location.href = "/auth";
+      
+      // Don't show error toast since we're still effectively logging out
+    }
   });
 
   return (
