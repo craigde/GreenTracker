@@ -629,7 +629,7 @@ export class MemStorage implements IStorage {
 }
 
 // Create database tables and migrate data
-import { DatabaseStorage } from "./dbStorage";
+import { MultiUserStorage } from "./multi-user-storage";
 
-// We're using database storage for data persistence
-export const storage = new DatabaseStorage();
+// We're using multi-user database storage for data persistence
+export const storage = new MultiUserStorage();

@@ -49,10 +49,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
+      console.log("Attempting to login with username:", credentials.username);
       const res = await apiRequest("POST", "/api/login", credentials);
-      const data = await res.json();
+      
+      // Always parse response, even for errors
+      const data = await res.json().catch(() => ({}));
+      
       if (!res.ok) {
-        throw new Error(data.error || "Login failed");
+        const errorMessage = data.error || "Login failed";
+        console.error("Login failed:", errorMessage);
+        throw new Error(errorMessage);
       }
       return data;
     },
@@ -64,9 +70,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      console.error("Login error:", error);
+      
+      let errorMessage = error.message;
+      
+      // Make the error message more user-friendly
+      if (error.message === "Invalid username or password") {
+        errorMessage = "We couldn't find an account with these credentials. Please check your username and password, or create a new account.";
+      }
+      
       toast({
         title: "Login failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     },
