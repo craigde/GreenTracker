@@ -177,33 +177,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      const res = await apiRequest("POST", "/api/logout");
-      // Don't try to parse response on success since we don't need the data
-      if (!res.ok) {
+      try {
+        console.log("Attempting to logout");
+        const res = await apiRequest("POST", "/api/logout");
+        
+        // Always parse response for consistency
+        let responseData = {};
         try {
-          const data = await res.json();
-          throw new Error(data.error || "Logout failed");
-        } catch (e) {
-          throw new Error("Logout failed: " + res.statusText);
+          responseData = await res.json();
+          console.log("Logout response:", responseData);
+        } catch (parseErr) {
+          console.error("Failed to parse logout response:", parseErr);
         }
+        
+        // Check for success or error
+        if (!res.ok) {
+          const errorMessage = 
+            responseData && 'error' in responseData 
+              ? responseData.error 
+              : "Logout failed: " + res.statusText;
+          
+          throw new Error(errorMessage);
+        }
+        
+        // Return response data in case we need it
+        return responseData;
+      } catch (err) {
+        console.error("Logout request error:", err);
+        throw err;
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Log success data
+      console.log("Logout successful:", data);
+      
+      // Clear user data from cache
       queryClient.setQueryData(["/api/user"], null);
+      
       // Invalidate all queries to force refetch when logged in again
       queryClient.invalidateQueries();
+      
+      // Show success message
       toast({
         title: "Logged out",
-        description: "You've been successfully logged out.",
+        description: data && 'message' in data 
+          ? data.message 
+          : "You've been successfully logged out.",
       });
+      
       // Force redirect to auth page
-      window.location.href = "/auth";
+      setTimeout(() => {
+        window.location.href = "/auth";
+      }, 500); // Small delay to ensure toast is seen
     },
     onError: (error: Error) => {
       console.error("Logout error:", error);
+      
       toast({
         title: "Logout failed",
-        description: error.message,
+        description: error.message || "Could not complete logout process.",
         variant: "destructive",
       });
     },
