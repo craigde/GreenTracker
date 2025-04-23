@@ -50,51 +50,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginMutation = useMutation({
     mutationFn: async (credentials: LoginData) => {
       console.log("Attempting to login with username:", credentials.username);
-      try {
-        // Make API request
-        const res = await apiRequest("POST", "/api/login", credentials);
-        console.log("Login response status:", res.status);
+      
+      // Make the API request
+      const res = await apiRequest("POST", "/api/login", credentials);
+      console.log("Login response status:", res.status);
+      
+      // For successful responses (status 2xx)
+      if (res.ok) {
+        // Try to parse JSON, but don't fail if it's not JSON
+        let userData: any = { 
+          id: -1, 
+          username: credentials.username 
+        };
         
-        // Handle successful login (status 2xx)
-        if (res.ok) {
+        const text = await res.text();
+        console.log("Login response text:", text);
+        
+        if (text && text.trim()) {
           try {
-            const data = await res.json();
-            console.log("Login success response:", data);
-            return data;
-          } catch (err) {
-            console.error("Failed to parse successful login response:", err);
-            // If we can't parse the response, use basic user data
-            return { 
-              id: -1, 
-              username: credentials.username 
-            };
+            // Only try to parse as JSON if it looks like JSON
+            if (text.trim().startsWith('{')) {
+              userData = JSON.parse(text);
+              console.log("Parsed login response:", userData);
+            }
+          } catch (parseErr) {
+            console.warn("Failed to parse login response as JSON:", parseErr);
+            // We'll use the default user data
           }
         }
         
-        // Handle error responses
-        let errorMessage = "Login failed";
-        try {
-          const errorData = await res.json();
-          console.error("API Error Response:", errorData);
-          if (errorData && 'error' in errorData) {
-            errorMessage = errorData.error;
-          }
-        } catch (parseErr) {
-          console.error("Failed to parse error response:", parseErr);
-        }
-        
-        console.error("Login failed:", errorMessage);
-        throw new Error(errorMessage);
-      } catch (err) {
-        if (err instanceof Error) {
-          console.error("Login request error:", err);
-          throw err;
-        } else {
-          // For non-Error objects
-          console.error("Login error (unknown type):", err);
-          throw new Error("Login failed. Please try again.");
-        }
+        // Success case - return the data 
+        return userData;
       }
+      
+      // Handle error responses
+      let errorMessage = "Login failed";
+      try {
+        const text = await res.text();
+        console.error("Login error response text:", text);
+        
+        if (text && text.trim()) {
+          if (text.trim().startsWith('{')) {
+            const errorData = JSON.parse(text);
+            if (errorData && 'error' in errorData) {
+              errorMessage = errorData.error;
+            }
+          }
+        }
+      } catch (parseErr) {
+        console.error("Failed to parse login error response:", parseErr);
+      }
+      
+      // Throw with appropriate error message
+      throw new Error(errorMessage || "Login failed: " + res.statusText);
     },
     onSuccess: (user: UserData) => {
       console.log("Login successful for user:", user);
@@ -134,51 +142,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
       console.log("Attempting to register with username:", credentials.username);
-      try {
-        // Make API request
-        const res = await apiRequest("POST", "/api/register", credentials);
-        console.log("Registration response status:", res.status);
+      
+      // Make the API request
+      const res = await apiRequest("POST", "/api/register", credentials);
+      console.log("Registration response status:", res.status);
+      
+      // For successful responses (status 2xx)
+      if (res.ok) {
+        // Try to parse JSON, but don't fail if it's not JSON
+        let userData: any = { 
+          id: -1, 
+          username: credentials.username 
+        };
         
-        // Handle successful registration (status 2xx)
-        if (res.ok) {
+        const text = await res.text();
+        console.log("Registration response text:", text);
+        
+        if (text && text.trim()) {
           try {
-            const data = await res.json();
-            console.log("Registration success response:", data);
-            return data;
-          } catch (err) {
-            console.error("Failed to parse successful registration response:", err);
-            // If we can't parse the response, use basic user data
-            return { 
-              id: -1, 
-              username: credentials.username 
-            };
+            // Only try to parse as JSON if it looks like JSON
+            if (text.trim().startsWith('{')) {
+              userData = JSON.parse(text);
+              console.log("Parsed registration response:", userData);
+            }
+          } catch (parseErr) {
+            console.warn("Failed to parse registration response as JSON:", parseErr);
+            // We'll use the default user data
           }
         }
         
-        // Handle error responses
-        let errorMessage = "Registration failed";
-        try {
-          const errorData = await res.json();
-          console.error("API Error Response:", errorData);
-          if (errorData && 'error' in errorData) {
-            errorMessage = errorData.error;
-          }
-        } catch (parseErr) {
-          console.error("Failed to parse error response:", parseErr);
-        }
-        
-        console.error("Registration failed:", errorMessage);
-        throw new Error(errorMessage);
-      } catch (err) {
-        if (err instanceof Error) {
-          console.error("Registration request error:", err);
-          throw err;
-        } else {
-          // For non-Error objects
-          console.error("Registration error (unknown type):", err);
-          throw new Error("Registration failed. Please try again.");
-        }
+        // Success case - return the data 
+        return userData;
       }
+      
+      // Handle error responses
+      let errorMessage = "Registration failed";
+      try {
+        const text = await res.text();
+        console.error("Registration error response text:", text);
+        
+        if (text && text.trim()) {
+          if (text.trim().startsWith('{')) {
+            const errorData = JSON.parse(text);
+            if (errorData && 'error' in errorData) {
+              errorMessage = errorData.error;
+            }
+          }
+        }
+      } catch (parseErr) {
+        console.error("Failed to parse registration error response:", parseErr);
+      }
+      
+      // Throw with appropriate error message
+      throw new Error(errorMessage || "Registration failed: " + res.statusText);
     },
     onSuccess: (user: UserData) => {
       console.log("Registration successful for user:", user);
@@ -217,39 +233,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      try {
-        console.log("Attempting to logout");
-        const res = await apiRequest("POST", "/api/logout");
+      console.log("Attempting to logout");
+      
+      // Make API request
+      const res = await apiRequest("POST", "/api/logout");
+      console.log("Logout response status:", res.status);
+      
+      // For successful responses (status 2xx)
+      if (res.ok) {
+        // Try to parse JSON, but don't fail if it's not JSON
+        let responseData: any = { success: true };
+        const text = await res.text();
         
-        // Always parse response for consistency
-        let responseData = {};
-        try {
-          responseData = await res.json();
-          console.log("Logout response:", responseData);
-        } catch (parseErr) {
-          console.error("Failed to parse logout response:", parseErr);
+        console.log("Logout response text:", text);
+        
+        if (text && text.trim()) {
+          try {
+            // Only try to parse as JSON if it looks like JSON
+            if (text.trim().startsWith('{')) {
+              responseData = JSON.parse(text);
+              console.log("Parsed logout response:", responseData);
+            }
+          } catch (parseErr) {
+            console.warn("Failed to parse logout response as JSON:", parseErr);
+            // Keep the default success value
+          }
         }
         
-        // Check for success or error
-        if (!res.ok) {
-          const errorMessage = 
-            responseData && 'error' in responseData 
-              ? responseData.error 
-              : "Logout failed: " + res.statusText;
-          
-          throw new Error(errorMessage);
-        }
-        
-        // Return response data in case we need it
+        // Success case - return the data or a default success object
         return responseData;
-      } catch (err) {
-        console.error("Logout request error:", err);
-        throw err;
       }
+      
+      // Handle error responses
+      let errorMessage = "Logout failed";
+      try {
+        const text = await res.text();
+        console.error("Error response text:", text);
+        
+        if (text && text.trim()) {
+          if (text.trim().startsWith('{')) {
+            const errorData = JSON.parse(text);
+            if (errorData && 'error' in errorData) {
+              errorMessage = errorData.error;
+            }
+          }
+        }
+      } catch (parseErr) {
+        console.error("Failed to parse error response:", parseErr);
+      }
+      
+      // Throw with appropriate error message
+      throw new Error(errorMessage || "Logout failed: " + res.statusText);
     },
-    onSuccess: (data) => {
-      // Log success data
-      console.log("Logout successful:", data);
+    onSuccess: (data: any) => {
+      console.log("Logout successful, received data:", data);
       
       // Clear user data from cache
       queryClient.setQueryData(["/api/user"], null);
@@ -258,11 +295,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.invalidateQueries();
       
       // Show success message
+      let message = "You've been successfully logged out.";
+      
+      // Try to use server message if available
+      if (data && typeof data === 'object' && 'message' in data) {
+        message = data.message as string;
+      }
+      
       toast({
         title: "Logged out",
-        description: data && 'message' in data 
-          ? data.message 
-          : "You've been successfully logged out.",
+        description: message,
       });
       
       // Force redirect to auth page
