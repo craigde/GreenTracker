@@ -74,10 +74,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const registerMutation = useMutation({
     mutationFn: async (credentials: RegisterData) => {
+      console.log("Attempting to register with username:", credentials.username);
       const res = await apiRequest("POST", "/api/register", credentials);
-      const data = await res.json();
+      
+      // Always parse response, even for errors
+      const data = await res.json().catch(() => ({}));
+      
       if (!res.ok) {
-        throw new Error(data.error || "Registration failed");
+        const errorMessage = data.error || "Registration failed";
+        console.error("Registration failed:", errorMessage);
+        throw new Error(errorMessage);
       }
       return data;
     },
@@ -89,9 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
     onError: (error: Error) => {
+      console.error("Registration error:", error);
       toast({
         title: "Registration failed",
-        description: error.message,
+        description: error.message === "Username already exists" 
+          ? "This username is already taken. Please choose a different username."
+          : error.message,
         variant: "destructive",
       });
     },
