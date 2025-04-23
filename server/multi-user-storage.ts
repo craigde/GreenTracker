@@ -37,6 +37,17 @@ export class MultiUserStorage implements IStorage {
   
   // Helper method to create default locations for a new user
   private async createDefaultLocationsForUser(userId: number): Promise<void> {
+    // First check if the user already has locations (to avoid duplicate creation)
+    const existingLocations = await db
+      .select()
+      .from(locations)
+      .where(eq(locations.userId, userId));
+    
+    if (existingLocations.length > 0) {
+      console.log(`User ${userId} already has ${existingLocations.length} locations, skipping default location creation`);
+      return;
+    }
+    
     const defaultLocations = [
       { name: "Living Room", isDefault: true },
       { name: "Bedroom", isDefault: true },
@@ -50,21 +61,35 @@ export class MultiUserStorage implements IStorage {
       { name: "Patio", isDefault: true }
     ];
     
-    for (const loc of defaultLocations) {
-      try {
-        await db.insert(locations).values({
-          name: loc.name,
-          userId: userId,
-          isDefault: true
-        });
-      } catch (error) {
-        console.error(`Failed to create default location ${loc.name} for user ${userId}:`, error);
-      }
+    // Use bulk insert for better performance and atomicity
+    try {
+      const valuesToInsert = defaultLocations.map(loc => ({
+        name: loc.name,
+        userId: userId,
+        isDefault: true
+      }));
+      
+      // Bulk insert all locations at once
+      await db.insert(locations).values(valuesToInsert);
+      console.log(`Successfully created ${defaultLocations.length} default locations for user ${userId}`);
+    } catch (error) {
+      console.error(`Failed to create default locations for user ${userId}:`, error);
     }
   }
   
   // Helper method to create default notification settings for a new user
   private async createDefaultNotificationSettingsForUser(userId: number): Promise<void> {
+    // Check if settings already exist
+    const [existingSettings] = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.userId, userId));
+    
+    if (existingSettings) {
+      console.log(`User ${userId} already has notification settings, skipping default creation`);
+      return;
+    }
+    
     try {
       await db.insert(notificationSettings).values({
         enabled: true,
