@@ -9,7 +9,7 @@ import fs from "fs";
 import { sendPlantWateringNotification, sendWelcomeNotification, checkPlantsAndSendNotifications, sendPushoverNotification } from "./notifications";
 import { setupAuth, hashPassword } from "./auth";
 import passport from "passport";
-import { setUserContext } from "./user-context";
+import { setUserContext, getCurrentUserId } from "./user-context";
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
@@ -411,7 +411,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   apiRouter.post("/locations", async (req: Request, res: Response) => {
     try {
       // Get the current user ID from the session
-      const userId = requireAuth();
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ error: "You must be logged in to create a location" });
+      }
       
       // Add the userId to the request body
       const locationData = {
