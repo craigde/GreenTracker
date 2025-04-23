@@ -2,10 +2,13 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { startScheduler } from "./scheduler";
+import { setUserContext } from "./user-context";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Apply user context middleware after routes are registered
 
 app.use((req, res, next) => {
   const start = Date.now();

@@ -1,0 +1,419 @@
+import { and, eq, sql } from "drizzle-orm";
+import { 
+  users, type User, type InsertUser,
+  plants, type Plant, type InsertPlant,
+  wateringHistory, type WateringHistory, type InsertWateringHistory,
+  locations, type Location, type InsertLocation,
+  plantSpecies, type PlantSpecies, type InsertPlantSpecies,
+  notificationSettings, type NotificationSettings, type InsertNotificationSettings
+} from "@shared/schema";
+import { db } from "./db";
+import { getCurrentUserId, requireAuth } from "./user-context";
+import { IStorage } from "./dbStorage";
+
+export class MultiUserStorage implements IStorage {
+  // User methods
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  // Plant methods
+  async getAllPlants(): Promise<Plant[]> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return []; // No plants for unauthenticated users
+    }
+    
+    return await db
+      .select()
+      .from(plants)
+      .where(eq(plants.userId, userId));
+  }
+
+  async getPlant(id: number): Promise<Plant | undefined> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return undefined;
+    }
+    
+    const [plant] = await db
+      .select()
+      .from(plants)
+      .where(and(eq(plants.id, id), eq(plants.userId, userId)));
+    
+    return plant || undefined;
+  }
+
+  async createPlant(insertPlant: InsertPlant): Promise<Plant> {
+    const userId = requireAuth();
+    
+    const [plant] = await db
+      .insert(plants)
+      .values({
+        ...insertPlant,
+        userId
+      })
+      .returning();
+    
+    return plant;
+  }
+
+  async updatePlant(id: number, plantUpdate: Partial<InsertPlant>): Promise<Plant | undefined> {
+    const userId = requireAuth();
+    
+    const [updatedPlant] = await db
+      .update(plants)
+      .set(plantUpdate)
+      .where(and(eq(plants.id, id), eq(plants.userId, userId)))
+      .returning();
+    
+    return updatedPlant || undefined;
+  }
+
+  async deletePlant(id: number): Promise<boolean> {
+    const userId = requireAuth();
+    
+    const result = await db
+      .delete(plants)
+      .where(and(eq(plants.id, id), eq(plants.userId, userId)))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  // Watering methods
+  async waterPlant(plantId: number): Promise<WateringHistory> {
+    const userId = requireAuth();
+    
+    // First check if the plant belongs to the user
+    const plant = await this.getPlant(plantId);
+    if (!plant) {
+      throw new Error(`Plant with ID ${plantId} not found or does not belong to the current user`);
+    }
+    
+    // Create watering history entry
+    const wateringEntry: InsertWateringHistory = {
+      plantId,
+      userId,
+      wateredAt: new Date(),
+    };
+    
+    const [entry] = await db.insert(wateringHistory).values(wateringEntry).returning();
+    
+    // Update the plant's last watered date
+    await db
+      .update(plants)
+      .set({ lastWatered: new Date() })
+      .where(eq(plants.id, plantId));
+    
+    return entry;
+  }
+
+  async getWateringHistory(plantId: number): Promise<WateringHistory[]> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(wateringHistory)
+      .where(
+        and(
+          eq(wateringHistory.plantId, plantId),
+          eq(wateringHistory.userId, userId)
+        )
+      )
+      .orderBy(wateringHistory.wateredAt);
+  }
+
+  // Location methods
+  async getAllLocations(): Promise<Location[]> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(locations)
+      .where(eq(locations.userId, userId));
+  }
+
+  async getLocation(id: number): Promise<Location | undefined> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return undefined;
+    }
+    
+    const [location] = await db
+      .select()
+      .from(locations)
+      .where(and(eq(locations.id, id), eq(locations.userId, userId)));
+    
+    return location || undefined;
+  }
+
+  async createLocation(insertLocation: InsertLocation): Promise<Location> {
+    const userId = requireAuth();
+    
+    // Check if a location with the same name already exists for this user
+    const [existingLocation] = await db
+      .select()
+      .from(locations)
+      .where(
+        and(
+          eq(locations.name, insertLocation.name),
+          eq(locations.userId, userId)
+        )
+      );
+    
+    if (existingLocation) {
+      throw new Error(`Location with name '${insertLocation.name}' already exists`);
+    }
+    
+    const [location] = await db
+      .insert(locations)
+      .values({
+        ...insertLocation,
+        userId
+      })
+      .returning();
+    
+    return location;
+  }
+
+  async updateLocation(id: number, locationUpdate: Partial<InsertLocation>): Promise<Location | undefined> {
+    const userId = requireAuth();
+    
+    // If name is being updated, check if it already exists for this user
+    if (locationUpdate.name) {
+      const [nameExists] = await db
+        .select()
+        .from(locations)
+        .where(
+          and(
+            eq(locations.name, locationUpdate.name),
+            eq(locations.userId, userId)
+          )
+        );
+      
+      if (nameExists && nameExists.id !== id) {
+        throw new Error(`Location with name '${locationUpdate.name}' already exists`);
+      }
+    }
+    
+    const [updatedLocation] = await db
+      .update(locations)
+      .set(locationUpdate)
+      .where(and(eq(locations.id, id), eq(locations.userId, userId)))
+      .returning();
+    
+    return updatedLocation || undefined;
+  }
+
+  async deleteLocation(id: number): Promise<boolean> {
+    const userId = requireAuth();
+    
+    // Get the location to check its name
+    const location = await this.getLocation(id);
+    if (!location) {
+      return false;
+    }
+    
+    // Check if this location is used by any plants owned by this user
+    const plantsWithLocation = await db
+      .select()
+      .from(plants)
+      .where(
+        and(
+          eq(plants.location, location.name),
+          eq(plants.userId, userId)
+        )
+      );
+    
+    if (plantsWithLocation.length > 0) {
+      throw new Error('Cannot delete location that is being used by plants');
+    }
+    
+    const result = await db
+      .delete(locations)
+      .where(and(eq(locations.id, id), eq(locations.userId, userId)))
+      .returning();
+    
+    return result.length > 0;
+  }
+
+  // Plant species catalog methods - these aren't user-specific
+  async getAllPlantSpecies(): Promise<PlantSpecies[]> {
+    return await db.select().from(plantSpecies);
+  }
+
+  async getPlantSpecies(id: number): Promise<PlantSpecies | undefined> {
+    const [species] = await db.select().from(plantSpecies).where(eq(plantSpecies.id, id));
+    return species || undefined;
+  }
+
+  async getPlantSpeciesByName(name: string): Promise<PlantSpecies | undefined> {
+    const [species] = await db
+      .select()
+      .from(plantSpecies)
+      .where(eq(plantSpecies.name, name));
+    
+    return species || undefined;
+  }
+
+  async createPlantSpecies(insertSpecies: InsertPlantSpecies): Promise<PlantSpecies> {
+    // Check if species with this name already exists
+    const existingSpecies = await this.getPlantSpeciesByName(insertSpecies.name);
+    
+    if (existingSpecies) {
+      throw new Error(`Plant species with name '${insertSpecies.name}' already exists`);
+    }
+    
+    const [species] = await db.insert(plantSpecies).values(insertSpecies).returning();
+    return species;
+  }
+
+  async updatePlantSpecies(id: number, speciesUpdate: Partial<InsertPlantSpecies>): Promise<PlantSpecies | undefined> {
+    // If name is being updated, check if it already exists
+    if (speciesUpdate.name) {
+      const [nameExists] = await db
+        .select()
+        .from(plantSpecies)
+        .where(eq(plantSpecies.name, speciesUpdate.name));
+      
+      if (nameExists && nameExists.id !== id) {
+        throw new Error(`Plant species with name '${speciesUpdate.name}' already exists`);
+      }
+    }
+    
+    const [updatedSpecies] = await db
+      .update(plantSpecies)
+      .set(speciesUpdate)
+      .where(eq(plantSpecies.id, id))
+      .returning();
+    
+    return updatedSpecies || undefined;
+  }
+
+  async deletePlantSpecies(id: number): Promise<boolean> {
+    const userId = getCurrentUserId();
+    
+    // Check if this species is used by any plants
+    if (userId !== null) {
+      const species = await this.getPlantSpecies(id);
+      if (!species) {
+        return false;
+      }
+      
+      const plantsWithSpecies = await db
+        .select()
+        .from(plants)
+        .where(
+          and(
+            eq(plants.species, species.name),
+            eq(plants.userId, userId)
+          )
+        );
+      
+      if (plantsWithSpecies.length > 0) {
+        throw new Error('Cannot delete species that is being used by plants');
+      }
+    }
+    
+    const result = await db.delete(plantSpecies).where(eq(plantSpecies.id, id)).returning();
+    return result.length > 0;
+  }
+
+  async searchPlantSpecies(query: string): Promise<PlantSpecies[]> {
+    if (!query || query.trim() === '') {
+      return this.getAllPlantSpecies();
+    }
+    
+    const lowerQuery = query.toLowerCase();
+    const allSpecies = await this.getAllPlantSpecies();
+    
+    return allSpecies.filter((species) => {
+      return (
+        species.name.toLowerCase().includes(lowerQuery) ||
+        species.scientificName.toLowerCase().includes(lowerQuery) ||
+        (species.description && species.description.toLowerCase().includes(lowerQuery)) ||
+        (species.careLevel && species.careLevel.toLowerCase().includes(lowerQuery)) ||
+        (species.family && species.family.toLowerCase().includes(lowerQuery))
+      );
+    });
+  }
+
+  // Notification settings methods
+  async getNotificationSettings(): Promise<NotificationSettings | undefined> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return undefined;
+    }
+    
+    const [settings] = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.userId, userId));
+    
+    return settings || undefined;
+  }
+
+  async updateNotificationSettings(settings: Partial<InsertNotificationSettings>): Promise<NotificationSettings> {
+    const userId = requireAuth();
+    
+    // Check if settings exist for this user
+    const [existingSettings] = await db
+      .select()
+      .from(notificationSettings)
+      .where(eq(notificationSettings.userId, userId));
+    
+    if (existingSettings) {
+      // Update existing settings
+      const [updatedSettings] = await db
+        .update(notificationSettings)
+        .set({
+          ...settings,
+          lastUpdated: new Date()
+        })
+        .where(eq(notificationSettings.userId, userId))
+        .returning();
+      
+      return updatedSettings;
+    } else {
+      // Create new settings
+      const [newSettings] = await db
+        .insert(notificationSettings)
+        .values({
+          enabled: settings.enabled ?? true,
+          pushoverAppToken: settings.pushoverAppToken ?? process.env.PUSHOVER_APP_TOKEN ?? null,
+          pushoverUserKey: settings.pushoverUserKey ?? process.env.PUSHOVER_USER_KEY ?? null,
+          userId,
+          lastUpdated: new Date()
+        })
+        .returning();
+      
+      return newSettings;
+    }
+  }
+}
+
+export const storage = new MultiUserStorage();

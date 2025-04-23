@@ -1,14 +1,27 @@
-import express, { type Express, Request, Response } from "express";
+import express, { type Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage as dbStorage } from "./storage";
 import { z } from "zod";
-import { insertPlantSchema, insertLocationSchema, insertPlantSpeciesSchema, insertNotificationSettingsSchema } from "@shared/schema";
+import { insertPlantSchema, insertLocationSchema, insertPlantSpeciesSchema, insertNotificationSettingsSchema, insertUserSchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { sendPlantWateringNotification, sendWelcomeNotification, checkPlantsAndSendNotifications, sendPushoverNotification } from "./notifications";
+import { setupAuth, hashPassword } from "./auth";
+import passport from "passport";
+
+// Middleware to check if user is authenticated
+function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.status(401).json({ error: "You must be logged in to access this resource" });
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication
+  setupAuth(app);
+  
   // Configure multer for file uploads
   const fileStorage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -43,6 +56,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
   
   const apiRouter = express.Router();
+
+  // Authentication routes
+  apiRouter.post("/register", async (req: Request, res: Response) => {
+    try {
+      const userData = insertUserSchema.parse(req.body);
+      
+      // Check if user already exists
+      const existingUser = await dbStorage.getUserByUsername(userData.username);
+      if (existingUser) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      
+      // Hash password
+      const hashedPassword = await hashPassword(userData.password);
+      
+      // Create new user
+      const user = await dbStorage.createUser({
+        ...userData,
+        password: hashedPassword
+      });
+      
+      // Log the user in
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ error: "Failed to log in after registration" });
+        }
+        return res.status(201).json({
+          id: user.id,
+          username: user.username
+        });
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(400).json({ error: "Invalid registration data" });
+    }
+  });
+  
+  apiRouter.post("/login", (req: Request, res: Response, next: NextFunction) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        return next(err);
+      }
+      if (!user) {
+        return res.status(401).json({ error: info?.message || "Invalid credentials" });
+      }
+      req.login(user, (err) => {
+        if (err) {
+          return next(err);
+        }
+        return res.json({
+          id: user.id,
+          username: user.username
+        });
+      });
+    })(req, res, next);
+  });
+  
+  apiRouter.post("/logout", (req: Request, res: Response) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to log out" });
+      }
+      res.status(200).json({ message: "Logged out successfully" });
+    });
+  });
+  
+  apiRouter.get("/user", (req: Request, res: Response) => {
+    if (!req.isAuthenticated()) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    const user = req.user as Express.User;
+    return res.json({
+      id: user.id,
+      username: user.username
+    });
+  });
 
   // Get all plants
   apiRouter.get("/plants", async (req: Request, res: Response) => {
