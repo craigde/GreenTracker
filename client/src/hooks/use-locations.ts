@@ -16,7 +16,8 @@ export function useLocations() {
   
   // Create a new location
   const createLocation = useMutation({
-    mutationFn: async (location: InsertLocation) => {
+    mutationFn: async (location: Omit<InsertLocation, "userId">) => {
+      // The userId will be added on the server from the authenticated session
       return await apiRequest("POST", "/api/locations", location);
     },
     onSuccess: () => {

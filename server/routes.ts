@@ -410,7 +410,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new location
   apiRouter.post("/locations", async (req: Request, res: Response) => {
     try {
-      const parsedData = insertLocationSchema.safeParse(req.body);
+      // Get the current user ID from the session
+      const userId = requireAuth();
+      
+      // Add the userId to the request body
+      const locationData = {
+        ...req.body,
+        userId
+      };
+      
+      const parsedData = insertLocationSchema.safeParse(locationData);
       
       if (!parsedData.success) {
         return res.status(400).json({ 
