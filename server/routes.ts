@@ -218,6 +218,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert lastWatered string to Date if needed
       let data = {...req.body};
       
+      // Add userId from authenticated user session
+      if (req.isAuthenticated() && req.user) {
+        data.userId = req.user.id;
+        console.log("Adding authenticated userId to plant data:", req.user.id);
+      } else {
+        console.error("User not authenticated for plant creation");
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       // Handle date conversion issue for lastWatered
       if (data.lastWatered) {
         try {
@@ -283,6 +292,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Convert lastWatered string to Date if needed
       let data = {...req.body};
+      
+      // Add userId from authenticated user session if needed for validation
+      if (req.isAuthenticated() && req.user && !data.userId) {
+        data.userId = req.user.id;
+        console.log("Adding authenticated userId to plant update data:", req.user.id);
+      } else if (!req.isAuthenticated()) {
+        console.error("User not authenticated for plant update");
+        return res.status(401).json({ message: "Not authenticated" });
+      }
       
       // Handle date conversion issue for lastWatered
       if (data.lastWatered) {
