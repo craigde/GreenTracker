@@ -25,7 +25,58 @@ export class MultiUserStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const [user] = await db.insert(users).values(insertUser).returning();
+    
+    // Create default locations for the new user
+    await this.createDefaultLocationsForUser(user.id);
+    
+    // Create default notification settings for the new user
+    await this.createDefaultNotificationSettingsForUser(user.id);
+    
     return user;
+  }
+  
+  // Helper method to create default locations for a new user
+  private async createDefaultLocationsForUser(userId: number): Promise<void> {
+    const defaultLocations = [
+      { name: "Living Room", isDefault: true },
+      { name: "Bedroom", isDefault: true },
+      { name: "Kitchen", isDefault: true },
+      { name: "Bathroom", isDefault: true },
+      { name: "Office", isDefault: true },
+      { name: "Balcony", isDefault: true },
+      { name: "Dining Room", isDefault: true },
+      { name: "Hallway", isDefault: true },
+      { name: "Porch", isDefault: true },
+      { name: "Patio", isDefault: true }
+    ];
+    
+    for (const loc of defaultLocations) {
+      try {
+        await db.insert(locations).values({
+          name: loc.name,
+          userId: userId,
+          isDefault: true
+        });
+      } catch (error) {
+        console.error(`Failed to create default location ${loc.name} for user ${userId}:`, error);
+      }
+    }
+  }
+  
+  // Helper method to create default notification settings for a new user
+  private async createDefaultNotificationSettingsForUser(userId: number): Promise<void> {
+    try {
+      await db.insert(notificationSettings).values({
+        enabled: true,
+        pushoverAppToken: process.env.PUSHOVER_APP_TOKEN || null,
+        pushoverUserKey: process.env.PUSHOVER_USER_KEY || null,
+        userId: userId,
+        lastUpdated: new Date()
+      });
+      console.log(`Created default notification settings for user ${userId}`);
+    } catch (error) {
+      console.error(`Failed to create default notification settings for user ${userId}:`, error);
+    }
   }
 
   // Plant methods
