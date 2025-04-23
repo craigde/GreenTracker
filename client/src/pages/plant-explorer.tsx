@@ -748,7 +748,7 @@ export default function PlantExplorer() {
                   // Pass as URL parameters instead of state
                   const params = new URLSearchParams({
                     name: selectedSpecies.name,
-                    species: selectedSpecies.scientificName,
+                    species: selectedSpecies.name, // Use common name instead of scientific name
                     wateringFrequency: selectedSpecies.wateringFrequency.toString(),
                     imageUrl: selectedSpecies.imageUrl || ''
                   });

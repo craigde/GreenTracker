@@ -143,13 +143,31 @@ export default function AddEditPlant() {
     }
   }, [isEditing, plantData, recommendedPlant, form]);
   
-  // Update form with recommended plant data when locations are loaded
+  // Update form with recommended plant data when locations and species data are both loaded
   useEffect(() => {
-    if (!isEditing && !isLoadingLocations && locations && locations.length > 0 && recommendedPlant) {
+    if (!isEditing && !isLoadingLocations && locations && locations.length > 0 && 
+        !isLoadingSpecies && plantSpeciesData && recommendedPlant) {
+      
+      // If the species field is populated, ensure it matches one of our valid species options
+      let speciesValue = recommendedPlant.species || form.getValues().species;
+      
+      // Log available species and the one we're trying to select
+      console.log("Species from URL:", speciesValue);
+      console.log("Available species:", plantSpeciesData.map(s => s.name));
+      
+      // Validate the species exists in our dropdown
+      const speciesExists = plantSpeciesData.some(s => s.name === speciesValue);
+      if (!speciesExists) {
+        console.log("Species not found in dropdown options, using empty value");
+        speciesValue = "";
+      } else {
+        console.log("Species found in dropdown options:", speciesValue);
+      }
+      
       form.reset({
         ...form.getValues(),
         name: recommendedPlant.name || form.getValues().name,
-        species: recommendedPlant.species || form.getValues().species,
+        species: speciesValue,
         location: locations[0].name,
         wateringFrequency: recommendedPlant.wateringFrequency || form.getValues().wateringFrequency,
         imageUrl: recommendedPlant.imageUrl,
@@ -161,7 +179,7 @@ export default function AddEditPlant() {
         location: locations[0].name,
       });
     }
-  }, [isEditing, isLoadingLocations, locations, recommendedPlant, form]);
+  }, [isEditing, isLoadingLocations, locations, isLoadingSpecies, plantSpeciesData, recommendedPlant, form]);
   
   // Handle image selection
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
