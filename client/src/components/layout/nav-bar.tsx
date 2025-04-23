@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/use-auth";
 
 interface NavBarProps {
   notificationCount: number;
@@ -7,9 +8,14 @@ interface NavBarProps {
 
 export function NavBar({ notificationCount }: NavBarProps) {
   const [location, setLocation] = useLocation();
+  const { logoutMutation } = useAuth();
   
   const navigateTo = (path: string) => {
     setLocation(path);
+  };
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
   };
 
   const isActive = (path: string) => location === path;
@@ -18,7 +24,7 @@ export function NavBar({ notificationCount }: NavBarProps) {
     <nav className="bg-white fixed bottom-0 left-0 right-0 h-16 shadow-lg flex justify-around items-center">
       <button
         onClick={() => navigateTo("/")}
-        className={`flex flex-col items-center justify-center w-1/4 h-full ${
+        className={`flex flex-col items-center justify-center w-1/5 h-full ${
           isActive("/") ? "text-primary" : "text-gray-500"
         }`}
       >
@@ -28,7 +34,7 @@ export function NavBar({ notificationCount }: NavBarProps) {
 
       <button
         onClick={() => navigateTo("/plant-explorer")}
-        className={`flex flex-col items-center justify-center w-1/4 h-full ${
+        className={`flex flex-col items-center justify-center w-1/5 h-full ${
           isActive("/plant-explorer") ? "text-primary" : "text-gray-500"
         }`}
       >
@@ -38,7 +44,7 @@ export function NavBar({ notificationCount }: NavBarProps) {
 
       <button
         onClick={() => navigateTo("/notifications")}
-        className={`flex flex-col items-center justify-center w-1/4 h-full ${
+        className={`flex flex-col items-center justify-center w-1/5 h-full ${
           isActive("/notifications") ? "text-primary" : "text-gray-500"
         } relative`}
       >
@@ -53,12 +59,20 @@ export function NavBar({ notificationCount }: NavBarProps) {
 
       <button
         onClick={() => navigateTo("/settings")}
-        className={`flex flex-col items-center justify-center w-1/4 h-full ${
+        className={`flex flex-col items-center justify-center w-1/5 h-full ${
           isActive("/settings") ? "text-primary" : "text-gray-500"
         }`}
       >
         <span className="material-icons">settings</span>
         <span className="text-xs mt-1">Settings</span>
+      </button>
+      
+      <button
+        onClick={handleLogout}
+        className="flex flex-col items-center justify-center w-1/5 h-full text-gray-500"
+      >
+        <span className="material-icons">logout</span>
+        <span className="text-xs mt-1">Logout</span>
       </button>
     </nav>
   );
