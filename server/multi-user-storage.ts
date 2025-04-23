@@ -221,14 +221,21 @@ export class MultiUserStorage implements IStorage {
   async getAllLocations(): Promise<Location[]> {
     const userId = getCurrentUserId();
     
+    // If not logged in, return empty array
     if (userId === null) {
+      console.log("No user ID found, returning empty locations array");
       return [];
     }
     
-    return await db
+    // Get all locations for the current user
+    console.log(`Getting locations for user ID: ${userId}`);
+    const userLocations = await db
       .select()
       .from(locations)
       .where(eq(locations.userId, userId));
+    
+    console.log(`Found ${userLocations.length} locations for user ${userId}`);
+    return userLocations;
   }
 
   async getLocation(id: number): Promise<Location | undefined> {
