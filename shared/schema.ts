@@ -24,6 +24,7 @@ export const locations = pgTable("locations", {
   userId: integer("user_id").references(() => users.id).notNull(),
 }, (table) => {
   return {
+    // Ensure location names are unique per user (but can be repeated across different users)
     locationUserName: unique("location_user_name_idx").on(table.name, table.userId),
   };
 });
