@@ -1,6 +1,7 @@
 import React from 'react';
 import { Plant } from '@shared/schema';
 import { PlantCard } from './plant-card';
+import { useLocation } from 'wouter';
 
 interface PlantGridViewProps {
   plants: Plant[];
@@ -8,6 +9,11 @@ interface PlantGridViewProps {
 }
 
 export function PlantGridView({ plants, onPlantWatered }: PlantGridViewProps) {
+  const [_, setLocation] = useLocation();
+  
+  const handlePlantSelect = (plantId: number) => {
+    setLocation(`/plants/${plantId}`);
+  };
   if (plants.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-60 text-center p-4">
@@ -25,7 +31,8 @@ export function PlantGridView({ plants, onPlantWatered }: PlantGridViewProps) {
         <PlantCard 
           key={plant.id} 
           plant={plant} 
-          onWatered={() => onPlantWatered(plant.id)} 
+          onWatered={() => onPlantWatered(plant.id)}
+          onSelect={handlePlantSelect}
         />
       ))}
     </div>

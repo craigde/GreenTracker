@@ -1,221 +1,166 @@
-import React, { useState, useMemo } from 'react';
-import { Calendar } from '@/components/ui/calendar';
+import React, { useState } from 'react';
 import { Plant } from '@shared/schema';
-import { Card, CardContent } from '@/components/ui/card';
-import { addDays, format, isSameDay, isAfter, isBefore } from 'date-fns';
-import { Badge } from '@/components/ui/badge';
-import { StatusDot } from '@/components/ui/status-dot';
-import { getPlantStatus } from '@/lib/plant-utils';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DayPicker, DayContent } from 'react-day-picker';
+import { addDays, format, isSameDay, isToday, startOfMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { getDueText } from '@/lib/date-utils';
+import { Droplet, ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 
 interface PlantCalendarViewProps {
   plants: Plant[];
-  onWatered: (plantId: number) => void;
-  onSelect: (plantId: number) => void;
+  onPlantWatered: (plantId: number) => void;
 }
 
-export function PlantCalendarView({ plants, onWatered, onSelect }: PlantCalendarViewProps) {
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+interface PlantWateringDay {
+  date: Date;
+  plantIds: number[];
+}
 
-  // Generate a mapping of dates to plants that need watering on those dates
-  const plantWateringDates = useMemo(() => {
-    const dateMap: Record<string, Plant[]> = {};
-    
-    plants.forEach(plant => {
-      if (!plant.lastWatered) return;
-      
-      const lastWateredDate = new Date(plant.lastWatered);
-      if (isNaN(lastWateredDate.getTime())) return;
-      
-      // Calculate next watering date based on frequency
-      const nextWateringDate = addDays(lastWateredDate, plant.wateringFrequency);
-      const dateKey = format(nextWateringDate, 'yyyy-MM-dd');
-      
-      if (!dateMap[dateKey]) {
-        dateMap[dateKey] = [];
-      }
-      
-      dateMap[dateKey].push(plant);
-    });
-    
-    return dateMap;
-  }, [plants]);
+export function PlantCalendarView({ plants, onPlantWatered }: PlantCalendarViewProps) {
+  const [month, setMonth] = useState<Date>(startOfMonth(new Date()));
+  
+  if (plants.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-60 text-center p-4">
+        <p className="text-lg text-muted-foreground">No plants added yet.</p>
+        <p className="text-sm text-muted-foreground">
+          Add your first plant using the + button below.
+        </p>
+      </div>
+    );
+  }
 
-  // Get plants that need watering on the selected date
-  const plantsForSelectedDate = useMemo(() => {
-    if (!selectedDate) return [];
+  // Generate watering dates for each plant
+  const wateringDays = plants.reduce<PlantWateringDay[]>((days, plant) => {
+    if (!plant.lastWatered) return days;
     
-    // Look for exact match first
-    const exactKey = format(selectedDate, 'yyyy-MM-dd');
-    const exactMatch = plantWateringDates[exactKey] || [];
+    // Calculate next watering date
+    const lastWatered = new Date(plant.lastWatered);
+    const nextWateringDate = addDays(lastWatered, plant.wateringFrequency);
     
-    // Also include overdue plants if the selected date is today
-    const today = new Date();
-    const isToday = isSameDay(selectedDate, today);
+    // Find if this date already exists in our array
+    const existingDay = days.find(day => isSameDay(day.date, nextWateringDate));
     
-    if (isToday) {
-      // Find all overdue plants (due date is before today)
-      const overduePlants = plants.filter(plant => {
-        if (!plant.lastWatered) return false;
-        const lastWateredDate = new Date(plant.lastWatered);
-        if (isNaN(lastWateredDate.getTime())) return false;
-        
-        const nextWateringDate = addDays(lastWateredDate, plant.wateringFrequency);
-        return isBefore(nextWateringDate, today);
+    if (existingDay) {
+      // Add this plant to the existing day
+      existingDay.plantIds.push(plant.id);
+    } else {
+      // Create a new day with this plant
+      days.push({
+        date: nextWateringDate,
+        plantIds: [plant.id]
       });
-      
-      // Combine with exact matches, avoiding duplicates
-      const combinedPlants = [...exactMatch];
-      
-      overduePlants.forEach(plant => {
-        if (!combinedPlants.some(p => p.id === plant.id)) {
-          combinedPlants.push(plant);
-        }
-      });
-      
-      return combinedPlants;
     }
     
-    return exactMatch;
-  }, [selectedDate, plantWateringDates, plants]);
+    return days;
+  }, []);
 
-  // Function to get date class names based on plants due on that date
-  const getDayClassName = (day: Date) => {
-    const dateKey = format(day, 'yyyy-MM-dd');
-    const plantsOnDate = plantWateringDates[dateKey];
-    const today = new Date();
+  // Get plants for a specific date
+  const getPlantsForDate = (date: Date) => {
+    const matchingDay = wateringDays.find(day => isSameDay(day.date, date));
+    if (!matchingDay) return [];
     
-    // If there are plants due on this date
-    if (plantsOnDate?.length) {
-      // If the date is today, highlight it
-      if (isSameDay(day, today)) {
-        return 'bg-primary text-primary-foreground';
-      }
-      
-      // If the date is overdue, show a different color
-      if (isBefore(day, today)) {
-        return 'bg-status-overdue/20 text-status-overdue';
-      }
-      
-      // Upcoming watering date
-      return 'bg-status-soon/20 text-status-soon';
-    }
-    
-    // No plants due on this date
-    return '';
+    return plants.filter(plant => matchingDay.plantIds.includes(plant.id));
   };
 
-  // Create a map of dates to plant counts for the badge
-  const dateToPlantCountMap = useMemo(() => {
-    const countMap: Record<string, number> = {};
+  // Component to render the day cell with plant indicators
+  const renderDay = (day: Date) => {
+    const plantsForDay = getPlantsForDate(day);
+    const count = plantsForDay.length;
     
-    Object.entries(plantWateringDates).forEach(([dateKey, plantsArray]) => {
-      countMap[dateKey] = plantsArray.length;
-    });
+    if (count === 0) return null;
     
-    return countMap;
-  }, [plantWateringDates]);
+    return (
+      <div className="relative">
+        <div className="absolute bottom-0 right-0 h-2 w-2 bg-primary rounded-full" />
+      </div>
+    );
+  };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-card rounded-lg p-4 shadow-sm">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={setSelectedDate}
-          className="rounded-md border"
-          components={{
-            Day: ({ day, ...props }) => {
-              const dateKey = format(day, 'yyyy-MM-dd');
-              const count = dateToPlantCountMap[dateKey];
-              
-              return (
-                <div
-                  {...props}
-                  className={`${props.className} ${getDayClassName(day)} relative`}
-                >
-                  {day.getDate()}
-                  {count > 0 && (
-                    <Badge
-                      className="absolute -top-2 -right-2 size-5 p-0 flex items-center justify-center text-[10px] font-medium"
-                      variant={isBefore(day, new Date()) ? "destructive" : "default"}
-                    >
-                      {count}
-                    </Badge>
-                  )}
-                </div>
-              );
-            },
-          }}
-        />
-      </div>
-
-      <div>
-        <h2 className="text-lg font-semibold mb-3 font-heading">
-          {selectedDate && (
-            <>
-              Plants due on {format(selectedDate, 'MMMM d, yyyy')}
-              {isSameDay(selectedDate, new Date()) && ' (Today)'}
-            </>
-          )}
-        </h2>
-        
-        {plantsForSelectedDate.length === 0 ? (
-          <Card className="bg-card p-4 text-center">
-            <p className="text-muted-foreground">No plants need watering on this date</p>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {plantsForSelectedDate.map(plant => (
-              <Card key={plant.id} className="bg-card border shadow-sm">
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center space-x-3">
-                      <div className="relative">
-                        <Avatar className="size-12">
-                          {plant.imageUrl ? (
-                            <AvatarImage src={plant.imageUrl} alt={plant.name} />
-                          ) : (
-                            <AvatarFallback>
-                              <span className="emoji-xl" role="img" aria-label="plant">🌿</span>
-                            </AvatarFallback>
-                          )}
-                        </Avatar>
-                        <StatusDot plant={plant} className="absolute -top-1 -right-1 ring-2 ring-white" />
-                      </div>
-                      
-                      <div>
-                        <h3 className="font-medium">{plant.name}</h3>
-                        <p className="text-sm text-muted-foreground">{plant.location}</p>
-                        <p className="text-sm font-medium mt-1">{getDueText(plant.lastWatered, plant.wateringFrequency)}</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex space-x-2">
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => onSelect(plant.id)}
-                      >
-                        Details
-                      </Button>
-                      
-                      <Button 
-                        size="sm"
-                        onClick={() => onWatered(plant.id)}
-                        variant={getPlantStatus(plant) === 'overdue' ? "destructive" : "default"}
-                      >
-                        Water
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+    <div className="flex flex-col items-center p-4">
+      <style>{`
+        .rdp-day_selected, .rdp-day_selected:focus-visible, .rdp-day_selected:hover {
+          background-color: hsl(var(--primary));
+          color: hsl(var(--primary-foreground));
+        }
+        .rdp-day_today {
+          background-color: hsl(var(--muted));
+          font-weight: bold;
+        }
+        .rdp-button:hover:not([disabled]):not(.rdp-day_selected) {
+          background-color: hsl(var(--accent));
+        }
+      `}</style>
+      
+      <DayPicker
+        mode="multiple"
+        showOutsideDays
+        month={month}
+        onMonthChange={setMonth}
+        modifiers={{
+          booked: wateringDays.map(day => day.date)
+        }}
+        components={{
+          IconLeft: () => <ChevronLeft className="h-4 w-4" />,
+          IconRight: () => <ChevronRight className="h-4 w-4" />,
+          DayContent: (props) => (
+            <div className="relative">
+              <DayContent {...props} />
+              {wateringDays.some(day => isSameDay(day.date, props.date)) && renderDay(props.date)}
+            </div>
+          ),
+        }}
+        styles={{
+          caption: { display: 'flex', justifyContent: 'space-between', margin: '0 auto' },
+          caption_label: { fontSize: '1.2rem', fontWeight: 'bold' },
+          table: { width: '100%' },
+          head_cell: { 
+            width: '2.5rem', 
+            height: '2.5rem',
+            fontWeight: 'normal',
+            color: 'hsl(var(--muted-foreground))',
+            fontSize: '0.875rem'
+          },
+          cell: { 
+            width: '2.5rem', 
+            height: '2.5rem',
+            position: 'relative' 
+          },
+          nav: { display: 'flex', justifyContent: 'space-between' }
+        }}
+        footer={
+          <div className="mt-4 text-sm text-muted-foreground text-center">
+            Dots indicate days when plants need water
           </div>
+        }
+      />
+
+      <div className="mt-6 w-full max-w-lg">
+        <h3 className="text-xl font-semibold mb-4">Today's Watering Schedule</h3>
+        {getPlantsForDate(new Date()).length > 0 ? (
+          getPlantsForDate(new Date()).map(plant => (
+            <div 
+              key={plant.id} 
+              className="flex items-center justify-between p-3 mb-2 border rounded-md"
+            >
+              <span className="font-medium">{plant.name}</span>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => onPlantWatered(plant.id)}
+              >
+                <Droplet className="mr-2 h-4 w-4" />
+                Water
+              </Button>
+            </div>
+          ))
+        ) : (
+          <p className="text-muted-foreground">No plants to water today</p>
         )}
       </div>
     </div>

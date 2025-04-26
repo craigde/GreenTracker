@@ -2,14 +2,20 @@ import React from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { PlantCard } from "@/components/ui/plant-card";
+import { PlantGridView } from "@/components/ui/plant-grid-view";
+import { PlantListView } from "@/components/ui/plant-list-view";
+import { PlantCalendarView } from "@/components/ui/plant-calendar-view";
+import { ViewModeToggle } from "@/components/ui/view-mode-toggle";
 import { usePlants } from "@/hooks/use-plants";
 import { Skeleton } from "@/components/ui/skeleton";
 import { groupPlantsByStatus } from "@/lib/plant-utils";
+import { useViewMode } from "@/hooks/use-view-mode";
 import { Loader2 } from "lucide-react";
 
 export default function Dashboard() {
   const [_, navigate] = useLocation();
   const { plants, isLoading, waterPlant } = usePlants();
+  const { viewMode } = useViewMode();
 
   const handleWaterPlant = (plantId: number) => {
     waterPlant.mutate(plantId);
@@ -49,8 +55,11 @@ export default function Dashboard() {
 
   return (
     <div className="px-4 py-6">
-      <header className="mb-8">
-        <h1 className="text-2xl font-bold font-heading">Welcome to PlantDaddy</h1>
+      <header className="mb-4">
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold font-heading">Welcome to PlantDaddy</h1>
+          <ViewModeToggle />
+        </div>
         <p className="text-muted-foreground mt-2">
           {plantsToWaterToday.length > 0 ? (
             <>
@@ -79,61 +88,28 @@ export default function Dashboard() {
         </div>
       ) : (
         <>
-          {/* Water Today Section */}
-          <section className="mb-8">
-            <h2 className="text-lg font-semibold mb-3 font-heading">
-              Water Today
-            </h2>
-
-            {plantsToWaterToday.length === 0 ? (
-              <p className="text-gray-500 text-sm">All caught up! No plants need watering today.</p>
-            ) : (
-              plantsToWaterToday.map((plant) => (
-                <PlantCard
-                  key={plant.id}
-                  plant={plant}
-                  onWatered={handleWaterPlant}
-                  onSelect={handleSelectPlant}
-                />
-              ))
+          <div className="mt-6">
+            {viewMode === 'grid' && (
+              <PlantGridView
+                plants={plants}
+                onPlantWatered={handleWaterPlant}
+              />
             )}
-          </section>
-
-          {/* Coming Up Section */}
-          {upcomingPlants.length > 0 && (
-            <section className="mb-8">
-              <h2 className="text-lg font-semibold mb-3 font-heading">
-                Coming Up
-              </h2>
-
-              {upcomingPlants.map((plant) => (
-                <PlantCard
-                  key={plant.id}
-                  plant={plant}
-                  onWatered={handleWaterPlant}
-                  onSelect={handleSelectPlant}
-                />
-              ))}
-            </section>
-          )}
-
-          {/* Recently Watered Section */}
-          {recentlyWatered.length > 0 && (
-            <section>
-              <h2 className="text-lg font-semibold mb-3 font-heading">
-                Recently Watered
-              </h2>
-
-              {recentlyWatered.map((plant) => (
-                <PlantCard
-                  key={plant.id}
-                  plant={plant}
-                  onWatered={handleWaterPlant}
-                  onSelect={handleSelectPlant}
-                />
-              ))}
-            </section>
-          )}
+            
+            {viewMode === 'list' && (
+              <PlantListView
+                plants={plants}
+                onPlantWatered={handleWaterPlant}
+              />
+            )}
+            
+            {viewMode === 'calendar' && (
+              <PlantCalendarView
+                plants={plants}
+                onPlantWatered={handleWaterPlant}
+              />
+            )}
+          </div>
         </>
       )}
 
