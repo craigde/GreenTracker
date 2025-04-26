@@ -18,6 +18,7 @@ import { getPlantStatus } from "@/lib/plant-utils";
 import { ThemeProvider, ThemeConsumer } from "@/components/theme-provider";
 import { AuthProvider } from "@/hooks/use-auth";
 import { ProtectedRoute } from "@/lib/protected-route";
+import { ViewModeProvider } from "@/hooks/use-view-mode";
 
 function AppNavBar() {
   const { plants, isLoading } = usePlants();
@@ -75,12 +76,14 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme="light">
         <AuthProvider>
-          <ThemeConsumer>
-            <TooltipProvider>
-              <Toaster />
-              <Router />
-            </TooltipProvider>
-          </ThemeConsumer>
+          <ViewModeProvider>
+            <ThemeConsumer>
+              <TooltipProvider>
+                <Toaster />
+                <Router />
+              </TooltipProvider>
+            </ThemeConsumer>
+          </ViewModeProvider>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

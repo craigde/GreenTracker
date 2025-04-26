@@ -1,16 +1,36 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 export type ViewMode = 'grid' | 'list' | 'calendar';
 
-type ViewModeContextType = {
+interface ViewModeContextProps {
   viewMode: ViewMode;
   setViewMode: (mode: ViewMode) => void;
-};
+}
 
-const ViewModeContext = createContext<ViewModeContextType | undefined>(undefined);
+const ViewModeContext = createContext<ViewModeContextProps | undefined>(undefined);
 
-export function ViewModeProvider({ children }: { children: ReactNode }) {
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+interface ViewModeProviderProps {
+  children: React.ReactNode;
+}
+
+export function ViewModeProvider({ children }: ViewModeProviderProps) {
+  const [viewMode, setViewModeState] = useState<ViewMode>(() => {
+    // Try to get from localStorage first
+    const savedMode = localStorage.getItem('plantDaddyViewMode');
+    if (savedMode && ['grid', 'list', 'calendar'].includes(savedMode)) {
+      return savedMode as ViewMode;
+    }
+    return 'grid'; // Default to grid view
+  });
+
+  // Save to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('plantDaddyViewMode', viewMode);
+  }, [viewMode]);
+
+  const setViewMode = (mode: ViewMode) => {
+    setViewModeState(mode);
+  };
 
   return (
     <ViewModeContext.Provider value={{ viewMode, setViewMode }}>
