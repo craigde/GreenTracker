@@ -2,6 +2,12 @@ import fetch from 'node-fetch';
 import { Plant } from '@shared/schema';
 import { daysUntilWatering, isOverdue } from '../client/src/lib/date-utils';
 import { storage } from './storage';
+import { 
+  configureEmailService, 
+  sendPlantWateringEmail, 
+  sendWelcomeEmail, 
+  sendTestEmail 
+} from './email-service';
 
 // Pushover API endpoint
 const PUSHOVER_API_URL = 'https://api.pushover.net/1/messages.json';

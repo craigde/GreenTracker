@@ -104,8 +104,14 @@ export const notificationSettings = pgTable("notification_settings", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id).notNull().unique(), // Each user has one settings record
   enabled: boolean("enabled").notNull().default(true),
+  // Pushover settings
   pushoverAppToken: text("pushover_app_token"),
   pushoverUserKey: text("pushover_user_key"),
+  pushoverEnabled: boolean("pushover_enabled").notNull().default(true),
+  // Email settings
+  emailEnabled: boolean("email_enabled").notNull().default(false),
+  emailAddress: text("email_address"),
+  sendgridApiKey: text("sendgrid_api_key"),
   lastUpdated: timestamp("last_updated").defaultNow(),
 });
 
