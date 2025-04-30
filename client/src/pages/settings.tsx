@@ -50,6 +50,8 @@ export default function Settings() {
   const [editingLocation, setEditingLocation] = useState<{ id: number; name: string } | null>(null);
   const [pushoverAppToken, setPushoverAppToken] = useState("");
   const [pushoverUserKey, setPushoverUserKey] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
+  const [sendgridApiKey, setSendgridApiKey] = useState("");
   
   const notificationSettings = settings as NotificationSettingsResponse;
 
@@ -449,14 +451,133 @@ export default function Settings() {
                       </Button>
                     </div>
                     
-                    {notificationSettings?.enabled && (!notificationSettings.pushoverAppToken || !notificationSettings.pushoverUserKey) && (
+                    {notificationSettings?.enabled && (!notificationSettings.pushoverAppToken || !notificationSettings.pushoverUserKey) && !notificationSettings.emailEnabled && (
                       <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-3 mt-2">
                         <div className="flex items-start">
                           <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-2" />
                           <div>
                             <h4 className="font-medium text-amber-800 dark:text-amber-300">Credentials Required</h4>
                             <p className="text-sm text-amber-700 dark:text-amber-400">
-                              Please enter your Pushover credentials to receive notifications. Without these, PlantDaddy cannot send watering reminders.
+                              Please enter your Pushover credentials to receive notifications, or set up Email notifications below.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="mt-8 border-t pt-6">
+                  <div className="flex items-center justify-between py-2 mb-3">
+                    <div>
+                      <h4 className="font-medium flex items-center">
+                        Email Notifications
+                      </h4>
+                      <p className="text-sm text-muted-foreground">
+                        Receive watering reminders via email instead of Pushover.
+                      </p>
+                    </div>
+                    <Switch
+                      checked={notificationSettings?.emailEnabled ?? false}
+                      onCheckedChange={(checked) => {
+                        updateSettings({ emailEnabled: checked });
+                        toast({
+                          title: checked ? "Email notifications enabled" : "Email notifications disabled",
+                          description: checked
+                            ? "You will receive watering reminders via email."
+                            : "You will no longer receive email notifications.",
+                        });
+                      }}
+                      disabled={isUpdating}
+                    />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="grid gap-2">
+                      <Label htmlFor="email-address">Email Address</Label>
+                      <div className="flex items-center">
+                        <Input
+                          id="email-address"
+                          type="email"
+                          value={emailAddress}
+                          onChange={(e) => setEmailAddress(e.target.value)}
+                          placeholder={notificationSettings?.emailAddress || "Enter your email address"}
+                          className="mr-2"
+                        />
+                        {notificationSettings?.emailAddress && (
+                          <div className="text-green-500 flex items-center">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            <span className="text-xs">Configured</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="grid gap-2">
+                      <Label htmlFor="sendgrid-api-key">SendGrid API Key</Label>
+                      <div className="flex items-center">
+                        <Input
+                          id="sendgrid-api-key"
+                          type="password"
+                          value={sendgridApiKey}
+                          onChange={(e) => setSendgridApiKey(e.target.value)}
+                          placeholder={notificationSettings?.sendgridApiKey ? "••••••••••••••••••••••••••••••" : "Enter your SendGrid API Key"}
+                          className="mr-2"
+                        />
+                        {notificationSettings?.sendgridApiKey && (
+                          <div className="text-green-500 flex items-center">
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            <span className="text-xs">Configured</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-3">
+                      <Button 
+                        onClick={() => {
+                          const updates: any = {};
+                          if (emailAddress) updates.emailAddress = emailAddress;
+                          if (sendgridApiKey) updates.sendgridApiKey = sendgridApiKey;
+                          
+                          if (Object.keys(updates).length === 0) {
+                            toast({
+                              title: "No changes to save",
+                              description: "Please enter your email settings.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          
+                          updateSettings(updates);
+                          toast({
+                            title: "Email settings saved",
+                            description: "Your email notification settings have been saved.",
+                          });
+                          
+                          // Clear input fields after saving
+                          setEmailAddress("");
+                          setSendgridApiKey("");
+                        }}
+                        disabled={isUpdating || (!emailAddress && !sendgridApiKey)}
+                      >
+                        {isUpdating ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <SaveIcon className="h-4 w-4 mr-2" />
+                        )}
+                        Save Email Settings
+                      </Button>
+                    </div>
+                    
+                    {notificationSettings?.enabled && notificationSettings?.emailEnabled && (!notificationSettings.emailAddress || !notificationSettings.sendgridApiKey) && (
+                      <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-md p-3 mt-2">
+                        <div className="flex items-start">
+                          <AlertCircle className="h-5 w-5 text-amber-500 mt-0.5 mr-2" />
+                          <div>
+                            <h4 className="font-medium text-amber-800 dark:text-amber-300">Email Settings Required</h4>
+                            <p className="text-sm text-amber-700 dark:text-amber-400">
+                              Please enter your email address and SendGrid API key to receive email notifications.
                             </p>
                           </div>
                         </div>

@@ -6,7 +6,7 @@ import { insertPlantSchema, insertLocationSchema, insertPlantSpeciesSchema, inse
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { sendPlantWateringNotification, sendWelcomeNotification, checkPlantsAndSendNotifications, sendPushoverNotification } from "./notifications";
+import { sendPlantWateringNotification, sendWelcomeNotification, checkPlantsAndSendNotifications, sendPushoverNotification, sendTestNotification } from "./notifications";
 import { setupAuth, hashPassword } from "./auth";
 import passport from "passport";
 import { setUserContext, getCurrentUserId } from "./user-context";
