@@ -100,14 +100,79 @@ export async function sendPlantWateringNotification(plant: Plant): Promise<boole
   // Use higher priority (1) for urgent notifications
   const priority = isUrgent ? 1 : 0;
   
-  return sendPushoverNotification(title, message, priority);
+  // Get notification settings to determine if email should be sent
+  const settings = await storage.getNotificationSettings();
+  let success = false;
+  
+  // Send Pushover notification if enabled
+  if (settings?.pushoverEnabled !== false) {
+    const pushoverSent = await sendPushoverNotification(title, message, priority);
+    if (pushoverSent) success = true;
+  }
+  
+  // Send email notification if enabled
+  if (settings?.emailEnabled && settings?.emailAddress && settings?.sendgridApiKey) {
+    // Configure email service with API key
+    configureEmailService(settings.sendgridApiKey);
+    
+    // Send email notification
+    const emailSent = await sendPlantWateringEmail(plant, settings.emailAddress);
+    if (emailSent) success = true;
+  }
+  
+  return success;
 }
 
 export async function sendWelcomeNotification(): Promise<boolean> {
   const title = '🪴 Welcome to PlantDaddy!';
   const message = 'Your plant watering notifications are now set up. You\'ll receive alerts when your plants need water.';
   
-  return sendPushoverNotification(title, message, 0);
+  // Get notification settings
+  const settings = await storage.getNotificationSettings();
+  let success = false;
+  
+  // Send Pushover notification if enabled
+  if (settings?.pushoverEnabled !== false) {
+    const pushoverSent = await sendPushoverNotification(title, message, 0);
+    if (pushoverSent) success = true;
+  }
+  
+  // Send email welcome notification if enabled
+  if (settings?.emailEnabled && settings?.emailAddress && settings?.sendgridApiKey) {
+    // Configure email service with API key
+    configureEmailService(settings.sendgridApiKey);
+    
+    // Send welcome email (using username if available, otherwise "Plant Enthusiast")
+    const user = await storage.getUser(settings.userId);
+    const username = user?.username || "Plant Enthusiast";
+    const emailSent = await sendWelcomeEmail(username, settings.emailAddress);
+    if (emailSent) success = true;
+  }
+  
+  return success;
+}
+
+export async function sendTestNotification(): Promise<{pushover: boolean, email: boolean}> {
+  const settings = await storage.getNotificationSettings();
+  const result = { pushover: false, email: false };
+  
+  // Send test Pushover notification if enabled
+  if (settings?.pushoverEnabled && settings?.pushoverAppToken && settings?.pushoverUserKey) {
+    const title = '🪴 PlantDaddy: Test Notification';
+    const message = 'This is a test notification from PlantDaddy. If you received this, your Pushover notifications are configured correctly!';
+    result.pushover = await sendPushoverNotification(title, message, 0);
+  }
+  
+  // Send test email notification if enabled
+  if (settings?.emailEnabled && settings?.emailAddress && settings?.sendgridApiKey) {
+    // Configure email service with API key
+    configureEmailService(settings.sendgridApiKey);
+    
+    // Send test email
+    result.email = await sendTestEmail(settings.emailAddress);
+  }
+  
+  return result;
 }
 
 export async function checkPlantsAndSendNotifications(plants: Plant[]): Promise<number> {

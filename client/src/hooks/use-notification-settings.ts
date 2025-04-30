@@ -5,15 +5,23 @@ import { apiRequest } from "@/lib/queryClient";
 export type NotificationSettingsResponse = {
   id: number | null;
   enabled: boolean;
+  pushoverEnabled?: boolean;
   pushoverAppToken: boolean; // Indicates if token exists, not the actual token
   pushoverUserKey: boolean; // Indicates if key exists, not the actual key
+  emailEnabled?: boolean;
+  emailAddress?: string | null;
+  sendgridApiKey: boolean; // Indicates if API key exists, not the actual key
   lastUpdated: string | null;
 };
 
 type UpdateNotificationSettingsParams = {
   enabled?: boolean;
+  pushoverEnabled?: boolean;
   pushoverAppToken?: string;
   pushoverUserKey?: string;
+  emailEnabled?: boolean;
+  emailAddress?: string;
+  sendgridApiKey?: string;
 };
 
 export function useNotificationSettings() {

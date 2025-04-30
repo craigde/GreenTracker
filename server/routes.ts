@@ -718,8 +718,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({
           id: null,
           enabled: true,
+          pushoverEnabled: true,
           pushoverAppToken: process.env.PUSHOVER_APP_TOKEN ? true : false, // Just return boolean indicating if token exists
           pushoverUserKey: process.env.PUSHOVER_USER_KEY ? true : false, // Just return boolean indicating if key exists
+          emailEnabled: false,
+          emailAddress: null,
+          sendgridApiKey: false, // Just indicate token doesn't exist
           lastUpdated: null
         });
       }
@@ -729,8 +733,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         id: settings.id,
         enabled: settings.enabled,
+        pushoverEnabled: settings.pushoverEnabled,
         pushoverAppToken: !!settings.pushoverAppToken,
         pushoverUserKey: !!settings.pushoverUserKey,
+        emailEnabled: settings.emailEnabled,
+        emailAddress: settings.emailAddress,
+        sendgridApiKey: !!settings.sendgridApiKey,
         lastUpdated: settings.lastUpdated
       });
     } catch (error: any) {
@@ -759,8 +767,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         id: updatedSettings.id,
         enabled: updatedSettings.enabled,
+        pushoverEnabled: updatedSettings.pushoverEnabled,
         pushoverAppToken: !!updatedSettings.pushoverAppToken,
         pushoverUserKey: !!updatedSettings.pushoverUserKey,
+        emailEnabled: updatedSettings.emailEnabled,
+        emailAddress: updatedSettings.emailAddress,
+        sendgridApiKey: !!updatedSettings.sendgridApiKey,
         lastUpdated: updatedSettings.lastUpdated
       });
     } catch (error: any) {
@@ -772,12 +784,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Test notification settings
   apiRouter.post("/notification-settings/test", async (req: Request, res: Response) => {
     try {
-      const sent = await sendWelcomeNotification();
+      const results = await sendTestNotification();
       
-      if (sent) {
-        res.json({ success: true, message: "Test notification sent successfully" });
+      if (results.pushover || results.email) {
+        // Construct detailed message about which notifications were sent
+        let message = "Test notification ";
+        const successTypes = [];
+        if (results.pushover) successTypes.push("Pushover");
+        if (results.email) successTypes.push("Email");
+        
+        message += `sent successfully via ${successTypes.join(" and ")}.`;
+        
+        res.json({ 
+          success: true, 
+          message,
+          results
+        });
       } else {
-        res.status(500).json({ success: false, message: "Failed to send test notification" });
+        res.status(500).json({ 
+          success: false, 
+          message: "Failed to send test notifications. Ensure notification settings are properly configured.",
+          results
+        });
       }
     } catch (error: any) {
       const errorMessage = error?.message || "Failed to send test notification";
