@@ -411,6 +411,9 @@ export default function Settings() {
                             return;
                           }
                           
+                          // Enable Pushover notifications when credentials are saved
+                          updates.pushoverEnabled = true;
+                          
                           updateSettings(updates);
                           toast({
                             title: "Credentials saved",
@@ -549,6 +552,9 @@ export default function Settings() {
                             return;
                           }
                           
+                          // Enable email notifications when credentials are saved
+                          updates.emailEnabled = true;
+                          
                           updateSettings(updates);
                           toast({
                             title: "Email settings saved",
@@ -567,6 +573,25 @@ export default function Settings() {
                           <SaveIcon className="h-4 w-4 mr-2" />
                         )}
                         Save Email Settings
+                      </Button>
+                      
+                      <Button 
+                        variant="outline"
+                        onClick={() => {
+                          testNotification();
+                          toast({
+                            title: "Sending test email",
+                            description: "Check your inbox for the test email notification.",
+                          });
+                        }}
+                        disabled={isTesting || !notificationSettings?.emailAddress || !notificationSettings?.sendgridApiKey || !notificationSettings?.emailEnabled || !notificationSettings?.enabled}
+                      >
+                        {isTesting ? (
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        ) : (
+                          <BellRing className="h-4 w-4 mr-2" />
+                        )}
+                        Test Email
                       </Button>
                     </div>
                     
