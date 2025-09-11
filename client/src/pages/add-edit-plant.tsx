@@ -32,6 +32,8 @@ import { useLocations } from "@/hooks/use-locations";
 import { useLocationState } from "@/hooks/use-location-state";
 import { usePlantSpecies } from "@/hooks/use-plant-species";
 import { Loader2, Upload, Image } from "lucide-react";
+import { ObjectUploader } from "@/components/ObjectUploader";
+import type { UploadResult } from "@uppy/core";
 
 export default function AddEditPlant() {
   const params = useParams();
@@ -76,7 +78,7 @@ export default function AddEditPlant() {
     }
   }, [recommendedPlant]);
 
-  const { useGetPlant, createPlant, updatePlant, uploadPlantImage } = usePlants();
+  const { useGetPlant, createPlant, updatePlant, uploadPlantImage, getUploadUrl, completeImageUpload } = usePlants();
   
   // Debug form submission
   useEffect(() => {
@@ -196,25 +198,45 @@ export default function AddEditPlant() {
     reader.readAsDataURL(file);
   };
   
-  // Handle image upload
-  const handleImageUpload = async () => {
-    if (!isEditing || !plantId || !selectedImage) return;
+  // Object Storage upload handlers
+  const handleGetUploadParameters = async () => {
+    if (!isEditing || !plantId) {
+      throw new Error('Plant ID is required for upload');
+    }
+    
+    const uploadURL = await getUploadUrl.mutateAsync(plantId);
+    return {
+      method: "PUT" as const,
+      url: uploadURL,
+    };
+  };
+
+  const handleUploadComplete = async (result: UploadResult<Record<string, unknown>, Record<string, unknown>>) => {
+    if (!isEditing || !plantId) return;
     
     setIsUploading(true);
     
     try {
-      await uploadPlantImage.mutateAsync({
-        id: plantId,
-        imageFile: selectedImage
-      });
-      
-      toast({
-        title: "Image uploaded",
-        description: "Plant image has been uploaded successfully."
-      });
+      if (result.successful && result.successful.length > 0) {
+        const uploadedFile = result.successful[0];
+        
+        // Complete the upload by setting ACL and updating plant record
+        const response = await completeImageUpload.mutateAsync({
+          plantId,
+          imageURL: uploadedFile.uploadURL as string
+        });
+        
+        // Update the image preview with the new Object Storage URL
+        setImagePreview(response.imageUrl);
+        
+        toast({
+          title: "Image uploaded",
+          description: "Plant image has been uploaded successfully."
+        });
+      }
     } catch (error) {
       toast({
-        title: "Failed to upload image",
+        title: "Failed to complete upload",
         description: "Please try again.",
         variant: "destructive"
       });
@@ -415,32 +437,27 @@ export default function AddEditPlant() {
                     
                     {isEditing && (
                       <div className="flex flex-col gap-2 w-full">
-                        <Label htmlFor="plant-image" className="sr-only">
-                          Choose image
-                        </Label>
-                        <Input
-                          id="plant-image"
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageChange}
-                          disabled={isLoadingPlant || isUploading}
-                          className="w-full"
-                        />
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={handleImageUpload}
-                          disabled={!selectedImage || isUploading || isLoadingPlant}
-                          className="flex items-center gap-2"
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={10485760} // 10MB
+                          onGetUploadParameters={handleGetUploadParameters}
+                          onComplete={handleUploadComplete}
+                          buttonClassName="w-full"
                         >
-                          {isUploading ? (
-                            <Loader2 className="size-4 animate-spin" />
-                          ) : (
-                            <Upload className="size-4" />
-                          )}
-                          Upload Image
-                        </Button>
+                          <div className="flex items-center gap-2">
+                            {isUploading ? (
+                              <Loader2 className="size-4 animate-spin" />
+                            ) : (
+                              <Upload className="size-4" />
+                            )}
+                            Upload Plant Image
+                          </div>
+                        </ObjectUploader>
+                        {isUploading && (
+                          <div className="text-sm text-muted-foreground">
+                            Uploading to secure storage...
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

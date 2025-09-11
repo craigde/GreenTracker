@@ -522,8 +522,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Plant not found" });
       }
 
+      // Get the authenticated user id for user-scoped upload path
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
       const objectStorageService = new ObjectStorageService();
-      const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+      const uploadURL = await objectStorageService.getObjectEntityUploadURL(userId.toString(), id);
       
       res.json({ uploadURL });
     } catch (error: any) {
@@ -561,7 +567,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         {
           owner: userId.toString(),
           visibility: "public", // Plant images are public for sharing
-        }
+        },
+        userId.toString() // Verify ownership during completion
       );
 
       // Update plant with Object Storage URL

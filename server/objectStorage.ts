@@ -132,8 +132,8 @@ export class ObjectStorageService {
     }
   }
 
-  // Gets the upload URL for an object entity.
-  async getObjectEntityUploadURL(): Promise<string> {
+  // Gets the upload URL for an object entity with user-scoped path for security
+  async getObjectEntityUploadURL(userId: string, plantId?: number): Promise<string> {
     const privateObjectDir = this.getPrivateObjectDir();
     if (!privateObjectDir) {
       throw new Error(
@@ -143,7 +143,11 @@ export class ObjectStorageService {
     }
 
     const objectId = randomUUID();
-    const fullPath = `${privateObjectDir}/uploads/${objectId}`;
+    // User-scoped path to prevent unauthorized access
+    const scopedPath = plantId 
+      ? `users/${userId}/plants/${plantId}/${objectId}`
+      : `users/${userId}/uploads/${objectId}`;
+    const fullPath = `${privateObjectDir}/${scopedPath}`;
 
     const { bucketName, objectName } = parseObjectPath(fullPath);
 
@@ -208,17 +212,43 @@ export class ObjectStorageService {
     return `/objects/${entityId}`;
   }
 
+  // Verify that an object path belongs to a specific user (security check)
+  verifyUserOwnership(objectPath: string, userId: string): boolean {
+    // Extract the path after /objects/uploads/
+    const parts = objectPath.replace('/objects/uploads/', '').split('/');
+    
+    // Expected format: users/{userId}/...
+    if (parts.length < 3 || parts[0] !== 'users' || parts[1] !== userId) {
+      return false;
+    }
+    
+    return true;
+  }
+
   // Tries to set the ACL policy for the object entity and return the normalized path.
   async trySetObjectEntityAclPolicy(
     rawPath: string,
-    aclPolicy: ObjectAclPolicy
+    aclPolicy: ObjectAclPolicy,
+    requiredUserId?: string
   ): Promise<string> {
     const normalizedPath = this.normalizeObjectEntityPath(rawPath);
     if (!normalizedPath.startsWith("/")) {
       return normalizedPath;
     }
 
+    // Verify ownership if userId is provided (security check)
+    if (requiredUserId && !this.verifyUserOwnership(normalizedPath, requiredUserId)) {
+      throw new Error("Access denied: Object does not belong to the authenticated user");
+    }
+
     const objectFile = await this.getObjectEntityFile(normalizedPath);
+    
+    // Check if object already has an owner (prevent claiming others' objects)
+    const existingAcl = await getObjectAclPolicy(objectFile);
+    if (existingAcl && existingAcl.owner && existingAcl.owner !== aclPolicy.owner) {
+      throw new Error("Access denied: Object is already owned by another user");
+    }
+    
     await setObjectAclPolicy(objectFile, aclPolicy);
     return normalizedPath;
   }
