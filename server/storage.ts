@@ -35,6 +35,7 @@ export interface IStorage {
   // Watering methods
   waterPlant(plantId: number): Promise<WateringHistory>;
   getWateringHistory(plantId: number): Promise<WateringHistory[]>;
+  getAllWateringHistoryForUser(): Promise<WateringHistory[]>;
 
   // Location methods
   getAllLocations(): Promise<Location[]>;
@@ -198,6 +199,12 @@ export class MemStorage implements IStorage {
   async getWateringHistory(plantId: number): Promise<WateringHistory[]> {
     return Array.from(this.wateringHistory.values())
       .filter((entry) => entry.plantId === plantId)
+      .sort((a, b) => b.wateredAt.getTime() - a.wateredAt.getTime()); // Most recent first
+  }
+
+  async getAllWateringHistoryForUser(): Promise<WateringHistory[]> {
+    // For MemStorage, we don't have user filtering, so return all watering history
+    return Array.from(this.wateringHistory.values())
       .sort((a, b) => b.wateredAt.getTime() - a.wateredAt.getTime()); // Most recent first
   }
   

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { useLocations } from "@/hooks/use-locations";
 import { useToast } from "@/hooks/use-toast";
 import { useNotificationSettings, NotificationSettingsResponse } from "@/hooks/use-notification-settings";
+import { useExport } from "@/hooks/use-export";
 import { 
   Loader2, 
   PencilIcon, 
@@ -16,7 +17,9 @@ import {
   BellOff,
   CheckCircle, 
   AlertCircle,
-  BellRing
+  BellRing,
+  Download,
+  Shield
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Switch } from "@/components/ui/switch";
@@ -45,6 +48,8 @@ export default function Settings() {
     isTesting,
     testSuccess
   } = useNotificationSettings();
+  
+  const { exportData, isExporting } = useExport();
 
   const [newLocation, setNewLocation] = useState("");
   const [editingLocation, setEditingLocation] = useState<{ id: number; name: string } | null>(null);
@@ -168,6 +173,43 @@ export default function Settings() {
                 <p className="text-sm text-muted-foreground">Switch between light and dark themes.</p>
               </div>
               <ThemeToggle />
+            </div>
+          </CardContent>
+        </Card>
+
+        <h2 className="text-lg font-semibold mb-3 font-heading">Data Backup</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Export a complete backup of your plant data including images, locations, watering history, and settings.
+        </p>
+        <Card className="mb-8">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-medium">Export Plant Data</h3>
+                <p className="text-sm text-muted-foreground">
+                  Download a complete backup of all your plant data as a JSON file.
+                </p>
+              </div>
+              <Button 
+                onClick={() => exportData()}
+                disabled={isExporting}
+                variant="outline"
+                className="flex items-center gap-2"
+                data-testid="button-export-backup"
+              >
+                {isExporting ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
+                {isExporting ? "Exporting..." : "Export Backup"}
+              </Button>
+            </div>
+            <div className="mt-3 text-xs text-muted-foreground">
+              <div className="flex items-center gap-1">
+                <Shield className="h-3 w-3" />
+                <span>Includes plants, locations, watering history, and notification settings</span>
+              </div>
             </div>
           </CardContent>
         </Card>

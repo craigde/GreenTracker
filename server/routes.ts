@@ -13,6 +13,7 @@ import { setUserContext, getCurrentUserId } from "./user-context";
 // Object Storage integration for secure, persistent plant image uploads
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
+import { ExportService } from "./export-service";
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
@@ -788,6 +789,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error: any) {
       const errorMessage = error?.message || "Failed to fetch notification settings";
+      res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  // Export user data backup as ZIP with images
+  apiRouter.get("/export", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const exportService = new ExportService(dbStorage);
+      const { stream, filename } = await exportService.exportUserBackupArchive();
+      
+      // Set headers for ZIP file download
+      res.set({
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${filename}"`,
+        'Access-Control-Expose-Headers': 'Content-Disposition'
+      });
+      
+      // Pipe the ZIP stream to the response
+      stream.pipe(res);
+      
+      // Handle stream errors
+      stream.on('error', (error) => {
+        console.error('Export stream error:', error);
+        if (!res.headersSent) {
+          res.status(500).json({ message: "Failed to export user data" });
+        }
+      });
+      
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to export user data";
+      console.error('Export error:', error);
       res.status(500).json({ message: errorMessage });
     }
   });

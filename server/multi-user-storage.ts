@@ -217,6 +217,20 @@ export class MultiUserStorage implements IStorage {
       .orderBy(wateringHistory.wateredAt);
   }
 
+  async getAllWateringHistoryForUser(): Promise<WateringHistory[]> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(wateringHistory)
+      .where(eq(wateringHistory.userId, userId))
+      .orderBy(wateringHistory.wateredAt);
+  }
+
   // Location methods
   async getAllLocations(): Promise<Location[]> {
     const userId = getCurrentUserId();
