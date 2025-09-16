@@ -511,6 +511,89 @@ export class MultiUserStorage implements IStorage {
       return newSettings;
     }
   }
+
+  // Import/restore methods
+  async deleteAllUserData(): Promise<void> {
+    const userId = requireAuth();
+    
+    // Delete all user data in proper order to respect foreign key constraints
+    // 1. Delete watering history first
+    await db.delete(wateringHistory).where(
+      eq(wateringHistory.plantId, sql`(SELECT id FROM plants WHERE user_id = ${userId})`)
+    );
+    
+    // 2. Delete plants
+    await db.delete(plants).where(eq(plants.userId, userId));
+    
+    // 3. Delete non-default locations
+    await db.delete(locations).where(
+      and(eq(locations.userId, userId), eq(locations.isDefault, false))
+    );
+    
+    // 4. Reset notification settings to defaults
+    await db.delete(notificationSettings).where(eq(notificationSettings.userId, userId));
+    
+    // Recreate default notification settings
+    await this.createDefaultNotificationSettingsForUser(userId);
+  }
+
+  async createWateringHistory(entry: InsertWateringHistory): Promise<WateringHistory> {
+    const [wateringEntry] = await db
+      .insert(wateringHistory)
+      .values(entry)
+      .returning();
+    
+    return wateringEntry;
+  }
+
+  async upsertLocationByName(name: string, isDefault: boolean = false): Promise<Location> {
+    const userId = requireAuth();
+    
+    // Check if location already exists for this user
+    const [existingLocation] = await db
+      .select()
+      .from(locations)
+      .where(
+        and(
+          eq(locations.userId, userId),
+          sql`LOWER(${locations.name}) = LOWER(${name})`
+        )
+      );
+    
+    if (existingLocation) {
+      return existingLocation;
+    }
+    
+    // Create new location
+    const [newLocation] = await db
+      .insert(locations)
+      .values({
+        name,
+        userId,
+        isDefault
+      })
+      .returning();
+    
+    return newLocation;
+  }
+
+  async findPlantByDetails(name: string, species: string | null, location: string): Promise<Plant | undefined> {
+    const userId = requireAuth();
+    
+    const [plant] = await db
+      .select()
+      .from(plants)
+      .where(
+        and(
+          eq(plants.userId, userId),
+          sql`LOWER(${plants.name}) = LOWER(${name})`,
+          species ? eq(plants.species, species) : sql`${plants.species} IS NULL`,
+          eq(plants.location, location)
+        )
+      );
+    
+    return plant || undefined;
+  }
 }
 
 export const storage = new MultiUserStorage();

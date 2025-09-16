@@ -56,6 +56,12 @@ export interface IStorage {
   // Notification settings methods
   getNotificationSettings(): Promise<NotificationSettings | undefined>;
   updateNotificationSettings(settings: Partial<InsertNotificationSettings>): Promise<NotificationSettings>;
+  
+  // Import/restore methods
+  deleteAllUserData(): Promise<void>;
+  createWateringHistory(entry: InsertWateringHistory): Promise<WateringHistory>;
+  upsertLocationByName(name: string, isDefault?: boolean): Promise<Location>;
+  findPlantByDetails(name: string, species: string | null, location: string): Promise<Plant | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -632,6 +638,64 @@ export class MemStorage implements IStorage {
     };
 
     return this.notificationSettingsData;
+  }
+
+  // Import/restore methods
+  async deleteAllUserData(): Promise<void> {
+    // For MemStorage, clear all user data but keep default locations and plant species
+    this.plants.clear();
+    this.wateringHistory.clear();
+    
+    // Keep default locations but remove user-created ones
+    const defaultLocations = Array.from(this.locations.values()).filter(loc => loc.isDefault);
+    this.locations.clear();
+    for (const loc of defaultLocations) {
+      this.locations.set(loc.id, loc);
+    }
+    
+    // Reset notification settings
+    this.notificationSettingsData = undefined;
+  }
+
+  async createWateringHistory(entry: InsertWateringHistory): Promise<WateringHistory> {
+    const id = this.wateringHistoryIdCounter++;
+    const wateringEntry: WateringHistory = {
+      id,
+      plantId: entry.plantId,
+      wateredAt: entry.wateredAt
+    };
+    
+    this.wateringHistory.set(id, wateringEntry);
+    return wateringEntry;
+  }
+
+  async upsertLocationByName(name: string, isDefault: boolean = false): Promise<Location> {
+    // Check if location already exists
+    const existingLocation = Array.from(this.locations.values()).find(
+      (loc) => loc.name.toLowerCase() === name.toLowerCase()
+    );
+    
+    if (existingLocation) {
+      return existingLocation;
+    }
+    
+    // Create new location
+    const id = this.locationIdCounter++;
+    const location: Location = { 
+      id, 
+      name,
+      isDefault
+    };
+    this.locations.set(id, location);
+    return location;
+  }
+
+  async findPlantByDetails(name: string, species: string | null, location: string): Promise<Plant | undefined> {
+    return Array.from(this.plants.values()).find(
+      (plant) => plant.name.toLowerCase() === name.toLowerCase() &&
+                 plant.species === species &&
+                 plant.location === location
+    );
   }
 }
 
