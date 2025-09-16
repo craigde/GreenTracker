@@ -23,6 +23,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Image } from "lucide-react";
 import { PlantHealthTracker } from "@/components/ui/plant-health-tracker";
+import { PlantCareTimeline } from "@/components/ui/plant-care-timeline";
 
 export default function PlantDetails() {
   const params = useParams();
@@ -224,16 +225,21 @@ export default function PlantDetails() {
           </CardContent>
         </Card>
 
-        <Card className="mb-6">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-lg font-semibold font-heading">Watering History</h2>
-              {status !== "watered" && (
+        {/* Water Plant Action Card */}
+        {status !== "watered" && (
+          <Card className="mb-6">
+            <CardContent className="p-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h3 className="font-semibold">Ready for Care</h3>
+                  <p className="text-sm text-gray-500">Your plant is ready for watering</p>
+                </div>
                 <Button 
                   onClick={handleWaterPlant} 
                   variant="default" 
                   className="bg-primary text-white"
                   disabled={waterPlant.isPending}
+                  data-testid="button-water-plant"
                 >
                   {waterPlant.isPending ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -242,43 +248,13 @@ export default function PlantDetails() {
                   )}
                   Water Now
                 </Button>
-              )}
-            </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-            <div className="space-y-3">
-              {plant.wateringHistory && plant.wateringHistory.length > 0 ? (
-                plant.wateringHistory.map((entry) => {
-                  // Ensure wateredAt is a valid date
-                  const wateredAtDate = entry.wateredAt ? new Date(entry.wateredAt) : null;
-                  const isValidDate = wateredAtDate && !isNaN(wateredAtDate.getTime());
-                  
-                  // If the date is invalid, skip this entry
-                  if (!isValidDate) {
-                    console.warn("Invalid watering history date encountered:", entry);
-                    return null;
-                  }
-                  
-                  return (
-                    <div
-                      key={entry.id}
-                      className="flex justify-between items-center py-2 border-b border-gray-100"
-                    >
-                      <div>
-                        <p className="font-medium">{formatDate(wateredAtDate)}</p>
-                        <p className="text-sm text-gray-500">{formatTime(wateredAtDate)}</p>
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {formatDistanceToNow(wateredAtDate)}
-                      </span>
-                    </div>
-                  );
-                }).filter(Boolean) // Filter out any null entries (invalid dates)
-              ) : (
-                <p className="text-gray-500 text-sm py-2">No watering history available.</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Unified Care Timeline */}
+        <PlantCareTimeline plantId={plantId} plantName={plant.name} />
 
         <PlantHealthTracker plantId={plantId} plantName={plant.name} />
 
