@@ -6,6 +6,7 @@ import { useLocations } from "@/hooks/use-locations";
 import { useToast } from "@/hooks/use-toast";
 import { useNotificationSettings, NotificationSettingsResponse } from "@/hooks/use-notification-settings";
 import { useExport } from "@/hooks/use-export";
+import { useImport, ImportMode } from "@/hooks/use-import";
 import { 
   Loader2, 
   PencilIcon, 
@@ -19,11 +20,21 @@ import {
   AlertCircle,
   BellRing,
   Download,
-  Shield
+  Upload,
+  Shield,
+  FileUp,
+  RefreshCw
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +61,7 @@ export default function Settings() {
   } = useNotificationSettings();
   
   const { exportData, isExporting } = useExport();
+  const { importData, isImporting } = useImport();
 
   const [newLocation, setNewLocation] = useState("");
   const [editingLocation, setEditingLocation] = useState<{ id: number; name: string } | null>(null);
@@ -57,6 +69,10 @@ export default function Settings() {
   const [pushoverUserKey, setPushoverUserKey] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
   const [sendgridApiKey, setSendgridApiKey] = useState("");
+  
+  // Import-related state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [importMode, setImportMode] = useState<ImportMode>('merge');
   
   const notificationSettings = settings as NotificationSettingsResponse;
 
@@ -153,6 +169,46 @@ export default function Settings() {
     });
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.name.endsWith('.zip')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select a ZIP backup file.",
+          variant: "destructive",
+        });
+        return;
+      }
+      setSelectedFile(file);
+    }
+  };
+
+  const handleImport = () => {
+    if (!selectedFile) {
+      toast({
+        title: "No file selected",
+        description: "Please select a backup file to import.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    importData(
+      { file: selectedFile, mode: importMode },
+      {
+        onSuccess: () => {
+          setSelectedFile(null);
+          // Reset file input
+          const fileInput = document.getElementById('backup-file-input') as HTMLInputElement;
+          if (fileInput) {
+            fileInput.value = '';
+          }
+        },
+      }
+    );
+  };
+
   return (
     <div className="px-4 py-6">
       <header className="mb-6">
@@ -177,17 +233,19 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        <h2 className="text-lg font-semibold mb-3 font-heading">Data Backup</h2>
+        <h2 className="text-lg font-semibold mb-3 font-heading">Data Backup & Restore</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Export a complete backup of your plant data including images, locations, watering history, and settings.
+          Export a complete backup of your plant data including images, locations, watering history, and settings. You can also restore data from a previous backup.
         </p>
-        <Card className="mb-8">
+        
+        {/* Export Section */}
+        <Card className="mb-4">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium">Export Plant Data</h3>
                 <p className="text-sm text-muted-foreground">
-                  Download a complete backup of all your plant data as a JSON file.
+                  Download a complete backup of all your plant data as a ZIP file.
                 </p>
               </div>
               <Button 
@@ -210,6 +268,122 @@ export default function Settings() {
                 <Shield className="h-3 w-3" />
                 <span>Includes plants, locations, watering history, and notification settings</span>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Restore Section */}
+        <Card className="mb-8">
+          <CardContent className="p-4">
+            <div className="mb-4">
+              <h3 className="font-medium mb-2">Restore Plant Data</h3>
+              <p className="text-sm text-muted-foreground">
+                Upload a backup ZIP file to restore your plant data. Choose your restore mode carefully.
+              </p>
+            </div>
+
+            {/* File Upload */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="backup-file-input" className="text-sm font-medium">
+                  Backup File
+                </Label>
+                <div className="mt-1 flex items-center gap-3">
+                  <Input
+                    id="backup-file-input"
+                    type="file"
+                    accept=".zip"
+                    onChange={handleFileSelect}
+                    disabled={isImporting}
+                    className="flex-1"
+                    data-testid="input-backup-file"
+                  />
+                  {selectedFile && (
+                    <div className="text-green-500 flex items-center">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      <span className="text-xs">{selectedFile.name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Import Mode Selection */}
+              <div>
+                <Label className="text-sm font-medium">Restore Mode</Label>
+                <Select 
+                  value={importMode} 
+                  onValueChange={(value: ImportMode) => setImportMode(value)}
+                  disabled={isImporting}
+                >
+                  <SelectTrigger className="mt-1" data-testid="select-import-mode">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="merge">
+                      Merge - Add to existing data (recommended)
+                    </SelectItem>
+                    <SelectItem value="replace">
+                      Replace - Delete all current data and restore from backup
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {importMode === 'merge' 
+                    ? "Safely adds backup data to your existing plants and locations"
+                    : "⚠️ Warning: This will permanently delete all your current data"
+                  }
+                </p>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center gap-3">
+                <Button 
+                  onClick={handleImport}
+                  disabled={isImporting || !selectedFile}
+                  className="flex items-center gap-2"
+                  data-testid="button-restore-backup"
+                >
+                  {isImporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : importMode === 'replace' ? (
+                    <RefreshCw className="h-4 w-4" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {isImporting ? "Restoring..." : importMode === 'replace' ? "Replace All Data" : "Merge Data"}
+                </Button>
+                
+                {selectedFile && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      const fileInput = document.getElementById('backup-file-input') as HTMLInputElement;
+                      if (fileInput) fileInput.value = '';
+                    }}
+                    disabled={isImporting}
+                    data-testid="button-clear-file"
+                  >
+                    Clear File
+                  </Button>
+                )}
+              </div>
+
+              {/* Warning for Replace Mode */}
+              {importMode === 'replace' && (
+                <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-3">
+                  <div className="flex items-start">
+                    <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-2" />
+                    <div>
+                      <h4 className="font-medium text-red-800 dark:text-red-300">Destructive Action</h4>
+                      <p className="text-sm text-red-700 dark:text-red-400">
+                        Replace mode will permanently delete all your current plants, locations, and watering history. 
+                        This action cannot be undone. Consider using Merge mode instead.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
