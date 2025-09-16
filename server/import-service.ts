@@ -11,7 +11,11 @@ import {
   type WateringHistory,
   type InsertWateringHistory,
   type NotificationSettings,
-  type InsertNotificationSettings
+  type InsertNotificationSettings,
+  type PlantHealthRecord,
+  type InsertPlantHealthRecord,
+  type CareActivity,
+  type InsertCareActivity
 } from "@shared/schema";
 
 // Validation schemas for import data
@@ -40,6 +44,26 @@ const BackupWateringHistorySchema = z.object({
   wateredAt: z.string().transform(val => new Date(val))
 });
 
+const BackupPlantHealthRecordSchema = z.object({
+  id: z.number(),
+  plantId: z.number(),
+  status: z.enum(['thriving', 'struggling', 'sick']),
+  notes: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+  recordedAt: z.string().transform(val => new Date(val)),
+  userId: z.number()
+});
+
+const BackupCareActivitySchema = z.object({
+  id: z.number(),
+  plantId: z.number(),
+  activityType: z.enum(['watering', 'fertilizing', 'repotting', 'pruning', 'misting', 'rotating']),
+  notes: z.string().nullable(),
+  performedAt: z.string().transform(val => new Date(val)),
+  userId: z.number(),
+  originalWateringId: z.number().nullable()
+});
+
 const BackupNotificationSettingsSchema = z.object({
   enabled: z.boolean(),
   pushoverEnabled: z.boolean().optional(),
@@ -50,7 +74,7 @@ const BackupNotificationSettingsSchema = z.object({
 
 const BackupExportInfoSchema = z.object({
   version: z.string(),
-  exportedAt: z.string().transform(val => new Date(val)),
+  exportDate: z.string().transform(val => new Date(val)), // Changed to match export
   username: z.string()
 });
 
@@ -59,6 +83,8 @@ const BackupDataSchema = z.object({
   plants: z.array(BackupPlantSchema),
   locations: z.array(BackupLocationSchema),
   wateringHistory: z.array(BackupWateringHistorySchema),
+  plantHealthRecords: z.array(BackupPlantHealthRecordSchema).optional().default([]), // Optional for backward compatibility
+  careActivities: z.array(BackupCareActivitySchema).optional().default([]), // Optional for backward compatibility
   notificationSettings: BackupNotificationSettingsSchema.optional()
 });
 
@@ -70,6 +96,8 @@ export interface ImportSummary {
   plantsImported: number;
   locationsImported: number;
   wateringHistoryImported: number;
+  healthRecordsImported: number;
+  careActivitiesImported: number;
   imagesImported: number;
   notificationSettingsUpdated: boolean;
   warnings: string[];
@@ -98,6 +126,8 @@ export class ImportService {
       plantsImported: 0,
       locationsImported: 0,
       wateringHistoryImported: 0,
+      healthRecordsImported: 0,
+      careActivitiesImported: 0,
       imagesImported: 0,
       notificationSettingsUpdated: false,
       warnings: []
@@ -130,7 +160,21 @@ export class ImportService {
         summary
       );
       
-      // 4. Restore notification settings (safely)
+      // 4. Restore health records with ID remapping
+      await this.restoreHealthRecords(
+        validatedData.plantHealthRecords, 
+        plantIdMapping, 
+        summary
+      );
+      
+      // 5. Restore care activities with ID remapping
+      await this.restoreCareActivities(
+        validatedData.careActivities, 
+        plantIdMapping, 
+        summary
+      );
+      
+      // 6. Restore notification settings (safely)
       if (validatedData.notificationSettings) {
         await this.restoreNotificationSettings(validatedData.notificationSettings, summary);
       }
@@ -500,6 +544,68 @@ export class ImportService {
       summary.notificationSettingsUpdated = true;
     } catch (error) {
       summary.warnings.push(`Failed to restore notification settings: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private async restoreHealthRecords(
+    healthRecords: Array<z.infer<typeof BackupPlantHealthRecordSchema>>,
+    plantIdMapping: Map<number, number>,
+    summary: ImportSummary
+  ): Promise<void> {
+    for (const record of healthRecords) {
+      try {
+        const newPlantId = plantIdMapping.get(record.plantId);
+        if (!newPlantId) {
+          summary.warnings.push(`Skipping health record: plant ID ${record.plantId} not found`);
+          continue;
+        }
+        
+        const healthData: InsertPlantHealthRecord = {
+          plantId: newPlantId,
+          status: record.status,
+          notes: record.notes,
+          imageUrl: null, // Set to null to avoid broken references - health record images aren't bundled in export
+          recordedAt: record.recordedAt,
+          userId: 0 // Will be set by storage layer based on current user context
+        };
+        
+        await this.storage.createHealthRecord(healthData);
+        summary.healthRecordsImported++;
+        
+      } catch (error) {
+        summary.warnings.push(`Failed to restore health record: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  }
+
+  private async restoreCareActivities(
+    careActivities: Array<z.infer<typeof BackupCareActivitySchema>>,
+    plantIdMapping: Map<number, number>,
+    summary: ImportSummary
+  ): Promise<void> {
+    for (const activity of careActivities) {
+      try {
+        const newPlantId = plantIdMapping.get(activity.plantId);
+        if (!newPlantId) {
+          summary.warnings.push(`Skipping care activity: plant ID ${activity.plantId} not found`);
+          continue;
+        }
+        
+        const careData: InsertCareActivity = {
+          plantId: newPlantId,
+          activityType: activity.activityType,
+          notes: activity.notes,
+          performedAt: activity.performedAt,
+          userId: 0, // Will be set by storage layer based on current user context
+          originalWateringId: activity.originalWateringId // Preserve migration link if exists
+        };
+        
+        await this.storage.createCareActivity(careData);
+        summary.careActivitiesImported++;
+        
+      } catch (error) {
+        summary.warnings.push(`Failed to restore care activity: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
     }
   }
 }
