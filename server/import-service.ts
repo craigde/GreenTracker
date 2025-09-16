@@ -157,6 +157,42 @@ export class ImportService {
     const imageFiles = new Map<string, Buffer>();
     let backupData: any = null;
     
+    // Security: ZIP bomb protection - check limits before processing
+    const MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024; // 100MB max uncompressed
+    const MAX_FILE_COUNT = 1000; // Maximum number of files
+    const MAX_INDIVIDUAL_FILE_SIZE = 20 * 1024 * 1024; // 20MB per file
+    
+    let totalUncompressedSize = 0;
+    let fileCount = 0;
+    
+    // First pass: validate all files without extracting
+    for (const filename in contents.files) {
+      const file = contents.files[filename];
+      if (!file.dir) {
+        fileCount++;
+        
+        // Check file count limit
+        if (fileCount > MAX_FILE_COUNT) {
+          throw new Error(`ZIP bomb protection: too many entries (${fileCount} > ${MAX_FILE_COUNT})`);
+        }
+        
+        // Get uncompressed size (this is safe and doesn't extract the file)
+        const uncompressedSize = file._data?.uncompressedSize || 0;
+        
+        // Check individual file size limit
+        if (uncompressedSize > MAX_INDIVIDUAL_FILE_SIZE) {
+          throw new Error(`ZIP bomb protection: file '${filename}' too large (${Math.round(uncompressedSize / 1024 / 1024)}MB > ${Math.round(MAX_INDIVIDUAL_FILE_SIZE / 1024 / 1024)}MB)`);
+        }
+        
+        totalUncompressedSize += uncompressedSize;
+        
+        // Check total uncompressed size limit
+        if (totalUncompressedSize > MAX_UNCOMPRESSED_SIZE) {
+          throw new Error(`ZIP bomb protection: total uncompressed size too large (${Math.round(totalUncompressedSize / 1024 / 1024)}MB > ${Math.round(MAX_UNCOMPRESSED_SIZE / 1024 / 1024)}MB)`);
+        }
+      }
+    }
+    
     // Extract backup.json
     const backupFile = contents.file("backup.json");
     if (!backupFile) {
@@ -166,15 +202,39 @@ export class ImportService {
     const backupText = await backupFile.async("text");
     backupData = JSON.parse(backupText);
     
-    // Extract image files
+    // Extract image files (with additional safety checks during extraction)
     const imageFolder = contents.folder("images");
     if (imageFolder) {
       for (const filename in imageFolder.files) {
         const file = imageFolder.files[filename];
         if (!file.dir && filename.startsWith("images/")) {
+          // Additional safety: verify file extension
           const imageName = filename.replace("images/", "");
-          const imageBuffer = await file.async("nodebuffer");
-          imageFiles.set(imageName, imageBuffer);
+          const validImageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
+          const hasValidExtension = validImageExtensions.some(ext => 
+            imageName.toLowerCase().endsWith(ext)
+          );
+          
+          if (!hasValidExtension) {
+            console.warn(`Skipping file with invalid image extension: ${imageName}`);
+            continue;
+          }
+          
+          try {
+            const imageBuffer = await file.async("nodebuffer");
+            
+            // Double-check actual extracted size matches expected size
+            const expectedSize = file._data?.uncompressedSize || 0;
+            if (imageBuffer.length > expectedSize * 1.1) { // Allow 10% variance
+              console.warn(`Image file size mismatch for ${imageName}, skipping for safety`);
+              continue;
+            }
+            
+            imageFiles.set(imageName, imageBuffer);
+          } catch (error) {
+            console.warn(`Failed to extract image file ${imageName}:`, error);
+            // Continue processing other files instead of failing the entire import
+          }
         }
       }
     }

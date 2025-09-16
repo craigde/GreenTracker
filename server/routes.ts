@@ -9,11 +9,12 @@ import fs from "fs";
 import { sendPlantWateringNotification, sendWelcomeNotification, checkPlantsAndSendNotifications, sendPushoverNotification, sendTestNotification } from "./notifications";
 import { setupAuth, hashPassword } from "./auth";
 import passport from "passport";
-import { setUserContext, getCurrentUserId } from "./user-context";
+import { setUserContext, getCurrentUserId, userContextStorage } from "./user-context";
 // Object Storage integration for secure, persistent plant image uploads
 import { ObjectStorageService, ObjectNotFoundError } from "./objectStorage";
 import { ObjectPermission } from "./objectAcl";
 import { ExportService } from "./export-service";
+import { ImportService } from "./import-service";
 
 // Middleware to check if user is authenticated
 function isAuthenticated(req: Request, res: Response, next: NextFunction) {
@@ -54,6 +55,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return cb(new Error('Only image files are allowed'));
       }
       cb(null, true);
+    }
+  });
+
+  // Configure multer for ZIP file imports (in-memory storage)
+  const importUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB file size limit for backup ZIPs
+    fileFilter: function(req, file, cb) {
+      // Accept ZIP files for backups
+      if (file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed' || file.originalname.endsWith('.zip')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only ZIP files are allowed for imports'), false);
+      }
     }
   });
 
@@ -190,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const plants = await dbStorage.getAllPlants();
       res.json(plants);
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch plants" });
+      res.status(500).json({ success: false, message: "Failed to fetch plants" });
     }
   });
 
@@ -821,6 +836,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const errorMessage = error?.message || "Failed to export user data";
       console.error('Export error:', error);
       res.status(500).json({ message: errorMessage });
+    }
+  });
+
+  // Custom middleware to handle multer errors consistently
+  function handleImportUpload(req: Request, res: Response, next: NextFunction) {
+    importUpload.single('backup')(req, res, (err: any) => {
+      if (err) {
+        console.error('Import upload error:', err);
+        
+        // Handle multer errors consistently with JSON responses
+        if (err instanceof multer.MulterError) {
+          if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({
+              success: false,
+              message: "File too large. Maximum file size is 50MB.",
+              details: err.message
+            });
+          } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+            return res.status(400).json({
+              success: false,
+              message: "Unexpected file field. Please use 'backup' as the file field name.",
+              details: err.message
+            });
+          } else {
+            return res.status(400).json({
+              success: false,
+              message: "File upload error. Please check your file and try again.",
+              details: err.message
+            });
+          }
+        } else if (err.message === 'Only ZIP files are allowed for imports') {
+          return res.status(400).json({
+            success: false,
+            message: "Invalid file type. Please upload a ZIP file containing your backup data.",
+            details: err.message
+          });
+        } else {
+          return res.status(500).json({
+            success: false,
+            message: "Upload failed. Please try again or contact support if the problem persists.",
+            details: err.message
+          });
+        }
+      }
+      next();
+    });
+  }
+
+  // Import user data backup from ZIP file
+  apiRouter.post("/import", isAuthenticated, handleImportUpload, async (req: Request, res: Response) => {
+    // Ensure user context is available - verify user authentication
+    const currentUserId = getCurrentUserId();
+    if (!currentUserId) {
+      return res.status(401).json({
+        success: false,
+        message: "User authentication required for import operations."
+      });
+    }
+    
+    try {      
+      if (!req.file) {
+        return res.status(400).json({ 
+          success: false,
+          message: "No backup file provided. Please upload a ZIP file containing your backup data." 
+        });
+      }
+
+      if (!req.file.buffer) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid file upload. Please try again with a valid ZIP file." 
+        });
+      }
+
+      // Validate import mode parameter
+      const mode = req.body.mode || 'merge';
+      if (mode !== 'merge' && mode !== 'replace') {
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid import mode. Must be 'merge' or 'replace'." 
+        });
+      }
+
+      // Wrap the import operation to preserve user context throughout async operations
+      const summary = await new Promise((resolve, reject) => {
+        userContextStorage.run({ userId: currentUserId }, async () => {
+          try {
+            const importService = new ImportService(dbStorage);
+            const result = await importService.importFromZipBuffer(req.file!.buffer, mode);
+            resolve(result);
+          } catch (error) {
+            reject(error);
+          }
+        });
+      });
+      
+      res.json({
+        success: true,
+        message: `Import completed successfully in ${mode} mode`,
+        summary
+      });
+
+    } catch (error: any) {
+      const errorMessage = error?.message || "Failed to import backup data";
+      console.error('Import error:', error);
+      
+      // Provide user-friendly error messages with consistent format
+      if (errorMessage.includes('backup.json not found')) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid backup file. The ZIP file must contain a backup.json file.",
+          details: errorMessage
+        });
+      }
+      
+      if (errorMessage.includes('validation')) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Invalid backup data format. Please ensure you're uploading a valid PlantDaddy backup file.",
+          details: errorMessage
+        });
+      }
+      
+      if (errorMessage.includes('ZIP bomb') || errorMessage.includes('too large') || errorMessage.includes('too many entries')) {
+        return res.status(400).json({ 
+          success: false,
+          message: "ZIP file is too large or contains too many files. Please upload a smaller backup file.",
+          details: errorMessage
+        });
+      }
+      
+      if (errorMessage.includes('Authentication required')) {
+        return res.status(401).json({ 
+          success: false,
+          message: "User authentication lost during import. Please log in again and try again.",
+          details: errorMessage
+        });
+      }
+      
+      res.status(500).json({ 
+        success: false,
+        message: "Import failed. Please try again or contact support if the problem persists.",
+        details: errorMessage 
+      });
     }
   });
 
