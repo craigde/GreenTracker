@@ -4,6 +4,8 @@ import {
   locations,
   plantSpecies,
   notificationSettings,
+  plantHealthRecords,
+  careActivities,
   type Plant, 
   type InsertPlant, 
   type WateringHistory, 
@@ -16,7 +18,11 @@ import {
   type PlantSpecies,
   type InsertPlantSpecies,
   type NotificationSettings,
-  type InsertNotificationSettings
+  type InsertNotificationSettings,
+  type PlantHealthRecord,
+  type InsertPlantHealthRecord,
+  type CareActivity,
+  type InsertCareActivity
 } from "@shared/schema";
 
 export interface IStorage {
@@ -57,6 +63,20 @@ export interface IStorage {
   getNotificationSettings(): Promise<NotificationSettings | undefined>;
   updateNotificationSettings(settings: Partial<InsertNotificationSettings>): Promise<NotificationSettings>;
   
+  // Plant Health Records methods
+  getPlantHealthRecords(plantId: number): Promise<PlantHealthRecord[]>;
+  getAllHealthRecordsForUser(): Promise<PlantHealthRecord[]>;
+  createHealthRecord(record: InsertPlantHealthRecord): Promise<PlantHealthRecord>;
+  updateHealthRecord(id: number, record: Partial<InsertPlantHealthRecord>): Promise<PlantHealthRecord | undefined>;
+  deleteHealthRecord(id: number): Promise<boolean>;
+  
+  // Care Activities methods  
+  getPlantCareActivities(plantId: number): Promise<CareActivity[]>;
+  getAllCareActivitiesForUser(): Promise<CareActivity[]>;
+  createCareActivity(activity: InsertCareActivity): Promise<CareActivity>;
+  updateCareActivity(id: number, activity: Partial<InsertCareActivity>): Promise<CareActivity | undefined>;
+  deleteCareActivity(id: number): Promise<boolean>;
+
   // Import/restore methods
   deleteAllUserData(): Promise<void>;
   createWateringHistory(entry: InsertWateringHistory): Promise<WateringHistory>;

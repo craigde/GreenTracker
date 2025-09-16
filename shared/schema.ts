@@ -120,3 +120,46 @@ export const insertNotificationSettingsSchema = notificationSettingsSchema.omit(
 
 export type NotificationSettings = typeof notificationSettings.$inferSelect;
 export type InsertNotificationSettings = z.infer<typeof insertNotificationSettingsSchema>;
+
+// Plant Health Records - Track health status over time with photos
+export const plantHealthRecords = pgTable("plant_health_records", {
+  id: serial("id").primaryKey(),
+  plantId: integer("plant_id").references(() => plants.id).notNull(),
+  status: text("status").notNull(), // "thriving", "struggling", "sick"
+  notes: text("notes"),
+  imageUrl: text("image_url"), // health comparison photos
+  recordedAt: timestamp("recorded_at").notNull().defaultNow(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+});
+
+export const plantHealthRecordSchema = createInsertSchema(plantHealthRecords);
+export const insertPlantHealthRecordSchema = plantHealthRecordSchema
+  .omit({ id: true })
+  .extend({
+    recordedAt: z.date().or(z.string().transform((val) => new Date(val))),
+    status: z.enum(["thriving", "struggling", "sick"]),
+  });
+
+export type PlantHealthRecord = typeof plantHealthRecords.$inferSelect;
+export type InsertPlantHealthRecord = z.infer<typeof insertPlantHealthRecordSchema>;
+
+// Care Activities - Enhanced tracking of all plant care activities
+export const careActivities = pgTable("care_activities", {
+  id: serial("id").primaryKey(),
+  plantId: integer("plant_id").references(() => plants.id).notNull(),
+  activityType: text("activity_type").notNull(), // "watering", "fertilizing", "repotting", "pruning", "misting", "rotating"
+  notes: text("notes"),
+  performedAt: timestamp("performed_at").notNull().defaultNow(),
+  userId: integer("user_id").references(() => users.id).notNull(),
+});
+
+export const careActivitySchema = createInsertSchema(careActivities);
+export const insertCareActivitySchema = careActivitySchema
+  .omit({ id: true })
+  .extend({
+    performedAt: z.date().or(z.string().transform((val) => new Date(val))),
+    activityType: z.enum(["watering", "fertilizing", "repotting", "pruning", "misting", "rotating"]),
+  });
+
+export type CareActivity = typeof careActivities.$inferSelect;
+export type InsertCareActivity = z.infer<typeof insertCareActivitySchema>;

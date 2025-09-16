@@ -5,7 +5,9 @@ import {
   wateringHistory, type WateringHistory, type InsertWateringHistory,
   locations, type Location, type InsertLocation,
   plantSpecies, type PlantSpecies, type InsertPlantSpecies,
-  notificationSettings, type NotificationSettings, type InsertNotificationSettings
+  notificationSettings, type NotificationSettings, type InsertNotificationSettings,
+  plantHealthRecords, type PlantHealthRecord, type InsertPlantHealthRecord,
+  careActivities, type CareActivity, type InsertCareActivity
 } from "@shared/schema";
 import { db } from "./db";
 import { getCurrentUserId, requireAuth } from "./user-context";
@@ -593,6 +595,182 @@ export class MultiUserStorage implements IStorage {
       );
     
     return plant || undefined;
+  }
+
+  // Plant Health Records methods
+  async getPlantHealthRecords(plantId: number): Promise<PlantHealthRecord[]> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(plantHealthRecords)
+      .where(
+        and(
+          eq(plantHealthRecords.plantId, plantId),
+          eq(plantHealthRecords.userId, userId)
+        )
+      )
+      .orderBy(plantHealthRecords.recordedAt);
+  }
+
+  async getAllHealthRecordsForUser(): Promise<PlantHealthRecord[]> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(plantHealthRecords)
+      .where(eq(plantHealthRecords.userId, userId))
+      .orderBy(plantHealthRecords.recordedAt);
+  }
+
+  async createHealthRecord(record: InsertPlantHealthRecord): Promise<PlantHealthRecord> {
+    const userId = requireAuth();
+    
+    // First check if the plant belongs to the user
+    const plant = await this.getPlant(record.plantId);
+    if (!plant) {
+      throw new Error(`Plant with ID ${record.plantId} not found or does not belong to the current user`);
+    }
+    
+    const healthRecord: InsertPlantHealthRecord = {
+      ...record,
+      userId,
+      recordedAt: record.recordedAt || new Date(),
+    };
+    
+    const [entry] = await db.insert(plantHealthRecords).values(healthRecord).returning();
+    return entry;
+  }
+
+  async updateHealthRecord(id: number, record: Partial<InsertPlantHealthRecord>): Promise<PlantHealthRecord | undefined> {
+    const userId = requireAuth();
+    
+    const [updated] = await db
+      .update(plantHealthRecords)
+      .set({
+        ...record,
+        recordedAt: record.recordedAt || new Date(),
+      })
+      .where(
+        and(
+          eq(plantHealthRecords.id, id),
+          eq(plantHealthRecords.userId, userId)
+        )
+      )
+      .returning();
+    
+    return updated || undefined;
+  }
+
+  async deleteHealthRecord(id: number): Promise<boolean> {
+    const userId = requireAuth();
+    
+    const result = await db
+      .delete(plantHealthRecords)
+      .where(
+        and(
+          eq(plantHealthRecords.id, id),
+          eq(plantHealthRecords.userId, userId)
+        )
+      );
+    
+    return result.rowCount > 0;
+  }
+
+  // Care Activities methods
+  async getPlantCareActivities(plantId: number): Promise<CareActivity[]> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(careActivities)
+      .where(
+        and(
+          eq(careActivities.plantId, plantId),
+          eq(careActivities.userId, userId)
+        )
+      )
+      .orderBy(careActivities.performedAt);
+  }
+
+  async getAllCareActivitiesForUser(): Promise<CareActivity[]> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return [];
+    }
+    
+    return await db
+      .select()
+      .from(careActivities)
+      .where(eq(careActivities.userId, userId))
+      .orderBy(careActivities.performedAt);
+  }
+
+  async createCareActivity(activity: InsertCareActivity): Promise<CareActivity> {
+    const userId = requireAuth();
+    
+    // First check if the plant belongs to the user
+    const plant = await this.getPlant(activity.plantId);
+    if (!plant) {
+      throw new Error(`Plant with ID ${activity.plantId} not found or does not belong to the current user`);
+    }
+    
+    const careActivity: InsertCareActivity = {
+      ...activity,
+      userId,
+      performedAt: activity.performedAt || new Date(),
+    };
+    
+    const [entry] = await db.insert(careActivities).values(careActivity).returning();
+    return entry;
+  }
+
+  async updateCareActivity(id: number, activity: Partial<InsertCareActivity>): Promise<CareActivity | undefined> {
+    const userId = requireAuth();
+    
+    const [updated] = await db
+      .update(careActivities)
+      .set({
+        ...activity,
+        performedAt: activity.performedAt || new Date(),
+      })
+      .where(
+        and(
+          eq(careActivities.id, id),
+          eq(careActivities.userId, userId)
+        )
+      )
+      .returning();
+    
+    return updated || undefined;
+  }
+
+  async deleteCareActivity(id: number): Promise<boolean> {
+    const userId = requireAuth();
+    
+    const result = await db
+      .delete(careActivities)
+      .where(
+        and(
+          eq(careActivities.id, id),
+          eq(careActivities.userId, userId)
+        )
+      );
+    
+    return result.rowCount > 0;
   }
 }
 
