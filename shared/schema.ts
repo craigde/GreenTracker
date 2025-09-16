@@ -134,9 +134,8 @@ export const plantHealthRecords = pgTable("plant_health_records", {
 
 export const plantHealthRecordSchema = createInsertSchema(plantHealthRecords);
 export const insertPlantHealthRecordSchema = plantHealthRecordSchema
-  .omit({ id: true })
+  .omit({ id: true, recordedAt: true })
   .extend({
-    recordedAt: z.date().or(z.string().transform((val) => new Date(val))),
     status: z.enum(["thriving", "struggling", "sick"]),
   });
 
