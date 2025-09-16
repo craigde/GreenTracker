@@ -8,7 +8,7 @@ export function useHealthRecords() {
   // Hook to get health records for a specific plant
   const useGetPlantHealthRecords = (plantId: number) => {
     return useQuery({
-      queryKey: ['/api/plants', plantId, 'health-records'],
+      queryKey: [`/api/plants/${plantId}/health-records`, plantId],
       enabled: !!plantId,
     });
   };
@@ -16,15 +16,12 @@ export function useHealthRecords() {
   // Hook to create a new health record
   const createHealthRecord = useMutation({
     mutationFn: async ({ plantId, data }: { plantId: number; data: Omit<InsertPlantHealthRecord, 'plantId' | 'userId'> }) => {
-      return apiRequest(`/api/plants/${plantId}/health-records`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', `/api/plants/${plantId}/health-records`, data);
     },
     onSuccess: (_, { plantId }) => {
       // Invalidate health records for the plant
       queryClient.invalidateQueries({
-        queryKey: ['/api/plants', plantId, 'health-records'],
+        queryKey: [`/api/plants/${plantId}/health-records`, plantId],
       });
       // Also invalidate the plant details cache to refresh any aggregated data
       queryClient.invalidateQueries({
@@ -44,7 +41,7 @@ export function useHealthRecords() {
     onSuccess: (updatedRecord: PlantHealthRecord) => {
       // Invalidate health records for the plant
       queryClient.invalidateQueries({
-        queryKey: ['/api/plants', updatedRecord.plantId, 'health-records'],
+        queryKey: [`/api/plants/${updatedRecord.plantId}/health-records`, updatedRecord.plantId],
       });
       // Also invalidate the plant details cache
       queryClient.invalidateQueries({
@@ -63,7 +60,7 @@ export function useHealthRecords() {
     onSuccess: (_, { plantId }) => {
       // Invalidate health records for the plant
       queryClient.invalidateQueries({
-        queryKey: ['/api/plants', plantId, 'health-records'],
+        queryKey: [`/api/plants/${plantId}/health-records`, plantId],
       });
       // Also invalidate the plant details cache
       queryClient.invalidateQueries({
