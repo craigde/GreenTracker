@@ -61,7 +61,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Configure multer for ZIP file imports (in-memory storage)
   const importUpload = multer({
     storage: multer.memoryStorage(),
-    limits: { fileSize: 50 * 1024 * 1024 }, // 50MB file size limit for backup ZIPs
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB file size limit for backup ZIPs (security hardened)
     fileFilter: function(req, file, cb) {
       // Accept ZIP files for backups
       if (file.mimetype === 'application/zip' || file.mimetype === 'application/x-zip-compressed' || file.originalname.endsWith('.zip')) {
@@ -917,6 +917,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: false,
           message: "Invalid import mode. Must be 'merge' or 'replace'." 
         });
+      }
+
+      // Security: Require explicit confirmation for replace mode (destructive operation)
+      if (mode === 'replace') {
+        const confirmation = req.body.confirmation;
+        if (confirmation !== 'REPLACE') {
+          return res.status(400).json({ 
+            success: false,
+            message: "Replace mode requires explicit confirmation. You must confirm by typing 'REPLACE' to proceed with this destructive operation.",
+            confirmationRequired: true
+          });
+        }
+        
+        // Log audit event for destructive operation
+        console.log(`AUDIT: User ${currentUserId} confirmed REPLACE mode import operation at ${new Date().toISOString()}`);
       }
 
       // Wrap the import operation to preserve user context throughout async operations

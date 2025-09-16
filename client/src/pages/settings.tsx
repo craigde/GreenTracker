@@ -73,6 +73,8 @@ export default function Settings() {
   // Import-related state
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importMode, setImportMode] = useState<ImportMode>('merge');
+  const [showReplaceConfirmation, setShowReplaceConfirmation] = useState(false);
+  const [replaceConfirmationText, setReplaceConfirmationText] = useState("");
   
   const notificationSettings = settings as NotificationSettingsResponse;
 
@@ -194,19 +196,62 @@ export default function Settings() {
       return;
     }
 
-    importData(
-      { file: selectedFile, mode: importMode },
-      {
-        onSuccess: () => {
-          setSelectedFile(null);
-          // Reset file input
-          const fileInput = document.getElementById('backup-file-input') as HTMLInputElement;
-          if (fileInput) {
-            fileInput.value = '';
-          }
-        },
-      }
-    );
+    // Show confirmation dialog for destructive replace mode
+    if (importMode === 'replace') {
+      setShowReplaceConfirmation(true);
+      setReplaceConfirmationText("");
+      return;
+    }
+
+    // Proceed with merge mode directly
+    performImport();
+  };
+
+  const performImport = (confirmation?: string) => {
+    if (!selectedFile) return;
+
+    const importParams: { file: File; mode: ImportMode; confirmation?: string } = {
+      file: selectedFile,
+      mode: importMode
+    };
+
+    // Add confirmation for replace mode
+    if (importMode === 'replace') {
+      importParams.confirmation = confirmation || replaceConfirmationText;
+    }
+
+    importData(importParams, {
+      onSuccess: () => {
+        setSelectedFile(null);
+        setShowReplaceConfirmation(false);
+        setReplaceConfirmationText("");
+        // Reset file input
+        const fileInput = document.getElementById('backup-file-input') as HTMLInputElement;
+        if (fileInput) {
+          fileInput.value = '';
+        }
+      },
+      onError: () => {
+        // Keep dialog open on error so user can try again
+        if (importMode === 'replace') {
+          setReplaceConfirmationText("");
+        }
+      },
+    });
+  };
+
+  const handleConfirmedReplace = () => {
+    if (replaceConfirmationText !== "REPLACE") {
+      toast({
+        title: "Confirmation required",
+        description: "You must type 'REPLACE' exactly to confirm this destructive operation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowReplaceConfirmation(false);
+    performImport("REPLACE");
   };
 
   return (
@@ -843,6 +888,69 @@ export default function Settings() {
           </CardContent>
         </Card>
       </section>
+
+      {/* Replace Mode Confirmation Dialog */}
+      <AlertDialog open={showReplaceConfirmation} onOpenChange={setShowReplaceConfirmation}>
+        <AlertDialogContent data-testid="dialog-replace-confirmation">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <AlertCircle className="h-5 w-5" />
+              Confirm Destructive Operation
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>
+                You are about to <strong>permanently delete all your current plant data</strong> and replace it with data from the backup file.
+              </p>
+              <p className="text-sm">
+                This will remove:
+              </p>
+              <ul className="text-sm list-disc list-inside ml-4 space-y-1">
+                <li>All your current plants and their photos</li>
+                <li>All watering history records</li>
+                <li>All custom locations</li>
+                <li>All notification settings</li>
+              </ul>
+              <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-md p-3">
+                <p className="text-sm font-medium text-red-800 dark:text-red-300">
+                  ⚠️ This action cannot be undone!
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">
+                  To proceed, type <code className="bg-gray-100 dark:bg-gray-800 px-1 rounded">REPLACE</code> in the field below:
+                </p>
+                <Input
+                  type="text"
+                  value={replaceConfirmationText}
+                  onChange={(e) => setReplaceConfirmationText(e.target.value)}
+                  placeholder="Type REPLACE to confirm"
+                  className="font-mono"
+                  data-testid="input-replace-confirmation"
+                />
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setShowReplaceConfirmation(false);
+                setReplaceConfirmationText("");
+              }}
+              data-testid="button-cancel-replace"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmedReplace}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700"
+              disabled={replaceConfirmationText !== "REPLACE"}
+              data-testid="button-confirm-replace"
+            >
+              {replaceConfirmationText !== "REPLACE" ? "Type REPLACE to enable" : "Replace All Data"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

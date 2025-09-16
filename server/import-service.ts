@@ -67,12 +67,10 @@ export type ImportMode = "merge" | "replace";
 
 export interface ImportSummary {
   mode: ImportMode;
-  plantsCreated: number;
-  plantsUpdated: number;
-  plantsSkipped: number;
-  locationsCreated: number;
-  wateringHistoryCreated: number;
-  imagesRestored: number;
+  plantsImported: number;
+  locationsImported: number;
+  wateringHistoryImported: number;
+  imagesImported: number;
   notificationSettingsUpdated: boolean;
   warnings: string[];
 }
@@ -97,12 +95,10 @@ export class ImportService {
     // Initialize summary
     const summary: ImportSummary = {
       mode,
-      plantsCreated: 0,
-      plantsUpdated: 0,
-      plantsSkipped: 0,
-      locationsCreated: 0,
-      wateringHistoryCreated: 0,
-      imagesRestored: 0,
+      plantsImported: 0,
+      locationsImported: 0,
+      wateringHistoryImported: 0,
+      imagesImported: 0,
       notificationSettingsUpdated: false,
       warnings: []
     };
@@ -153,92 +149,161 @@ export class ImportService {
   }> {
     const zip = new JSZip();
     
-    const contents = await zip.loadAsync(zipBuffer);
+    // Security: Safer limits for production
+    const MAX_UNCOMPRESSED_SIZE = 10 * 1024 * 1024; // 10MB max uncompressed (reduced)
+    const MAX_FILE_COUNT = 100; // Maximum number of files (reduced)
+    const MAX_INDIVIDUAL_FILE_SIZE = 5 * 1024 * 1024; // 5MB per file (reduced)
+    const MAX_BACKUP_JSON_SIZE = 1024 * 1024; // 1MB for backup.json
+
+    let contents: JSZip;
+    try {
+      contents = await zip.loadAsync(zipBuffer);
+    } catch (error) {
+      throw new Error(`Invalid or corrupted ZIP file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
     const imageFiles = new Map<string, Buffer>();
     let backupData: any = null;
-    
-    // Security: ZIP bomb protection - check limits before processing
-    const MAX_UNCOMPRESSED_SIZE = 100 * 1024 * 1024; // 100MB max uncompressed
-    const MAX_FILE_COUNT = 1000; // Maximum number of files
-    const MAX_INDIVIDUAL_FILE_SIZE = 20 * 1024 * 1024; // 20MB per file
-    
-    let totalUncompressedSize = 0;
+    let totalExtractedSize = 0;
     let fileCount = 0;
-    
-    // First pass: validate all files without extracting
+
+    // Helper function to validate filename safety (prevent path traversal)
+    const isValidFilename = (filename: string): boolean => {
+      // Prevent path traversal attacks
+      if (filename.includes('..') || filename.includes('\\') || filename.startsWith('/')) {
+        return false;
+      }
+      
+      // Allow only safe characters (alphanumeric, dots, hyphens, underscores, forward slashes for paths)
+      const safeFilenameRegex = /^[a-zA-Z0-9._/-]+$/;
+      return safeFilenameRegex.test(filename) && filename.length > 0 && filename.length <= 255;
+    };
+
+    // Helper function to safely extract with streaming and size limits
+    const safeExtractFile = async (file: JSZip.JSZipObject, maxSize: number): Promise<Buffer> => {
+      const chunks: Buffer[] = [];
+      let currentSize = 0;
+
+      return new Promise((resolve, reject) => {
+        const stream = file.nodeStream();
+        
+        // Timeout protection (30 seconds max per file)
+        const timeoutId = setTimeout(() => {
+          stream.destroy();
+          reject(new Error('File extraction timeout - potential ZIP bomb'));
+        }, 30000);
+
+        stream.on('data', (chunk: Buffer) => {
+          currentSize += chunk.length;
+          totalExtractedSize += chunk.length;
+
+          // Check individual file size during extraction (reliable protection)
+          if (currentSize > maxSize) {
+            clearTimeout(timeoutId);
+            stream.destroy();
+            reject(new Error(`File exceeds size limit during extraction: ${Math.round(currentSize / 1024)}KB > ${Math.round(maxSize / 1024)}KB`));
+            return;
+          }
+
+          // Check total extracted size during extraction (reliable protection)
+          if (totalExtractedSize > MAX_UNCOMPRESSED_SIZE) {
+            clearTimeout(timeoutId);
+            stream.destroy();
+            reject(new Error(`Total extracted size exceeds limit: ${Math.round(totalExtractedSize / 1024 / 1024)}MB > ${Math.round(MAX_UNCOMPRESSED_SIZE / 1024 / 1024)}MB`));
+            return;
+          }
+
+          chunks.push(chunk);
+        });
+
+        stream.on('end', () => {
+          clearTimeout(timeoutId);
+          resolve(Buffer.concat(chunks));
+        });
+
+        stream.on('error', (error) => {
+          clearTimeout(timeoutId);
+          reject(new Error(`Failed to extract file: ${error.message}`));
+        });
+      });
+    };
+
+    // First pass: validate structure and count files
     for (const filename in contents.files) {
       const file = contents.files[filename];
       if (!file.dir) {
         fileCount++;
-        
+
         // Check file count limit
         if (fileCount > MAX_FILE_COUNT) {
-          throw new Error(`ZIP bomb protection: too many entries (${fileCount} > ${MAX_FILE_COUNT})`);
+          throw new Error(`ZIP bomb protection: too many files (${fileCount} > ${MAX_FILE_COUNT})`);
         }
-        
-        // Get uncompressed size (this is safe and doesn't extract the file)
-        const uncompressedSize = file._data?.uncompressedSize || 0;
-        
-        // Check individual file size limit
-        if (uncompressedSize > MAX_INDIVIDUAL_FILE_SIZE) {
-          throw new Error(`ZIP bomb protection: file '${filename}' too large (${Math.round(uncompressedSize / 1024 / 1024)}MB > ${Math.round(MAX_INDIVIDUAL_FILE_SIZE / 1024 / 1024)}MB)`);
-        }
-        
-        totalUncompressedSize += uncompressedSize;
-        
-        // Check total uncompressed size limit
-        if (totalUncompressedSize > MAX_UNCOMPRESSED_SIZE) {
-          throw new Error(`ZIP bomb protection: total uncompressed size too large (${Math.round(totalUncompressedSize / 1024 / 1024)}MB > ${Math.round(MAX_UNCOMPRESSED_SIZE / 1024 / 1024)}MB)`);
+
+        // Validate filename safety
+        if (!isValidFilename(filename)) {
+          throw new Error(`Security: invalid or unsafe filename detected: ${filename}`);
         }
       }
     }
-    
-    // Extract backup.json
+
+    // Extract backup.json first with strict size limit
     const backupFile = contents.file("backup.json");
     if (!backupFile) {
-      throw new Error("backup.json not found in ZIP file");
+      throw new Error("Required backup.json file not found in ZIP");
     }
-    
-    const backupText = await backupFile.async("text");
-    backupData = JSON.parse(backupText);
-    
-    // Extract image files (with additional safety checks during extraction)
+
+    try {
+      const backupBuffer = await safeExtractFile(backupFile, MAX_BACKUP_JSON_SIZE);
+      const backupText = backupBuffer.toString('utf8');
+      backupData = JSON.parse(backupText);
+    } catch (error) {
+      throw new Error(`Failed to extract or parse backup.json: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+
+    // Extract image files with safety checks
     const imageFolder = contents.folder("images");
     if (imageFolder) {
       for (const filename in imageFolder.files) {
         const file = imageFolder.files[filename];
         if (!file.dir && filename.startsWith("images/")) {
-          // Additional safety: verify file extension
           const imageName = filename.replace("images/", "");
+
+          // Validate filename safety
+          if (!isValidFilename(filename) || !isValidFilename(imageName)) {
+            console.warn(`Skipping unsafe filename: ${filename}`);
+            continue;
+          }
+
+          // Validate file extension
           const validImageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'];
           const hasValidExtension = validImageExtensions.some(ext => 
             imageName.toLowerCase().endsWith(ext)
           );
-          
+
           if (!hasValidExtension) {
             console.warn(`Skipping file with invalid image extension: ${imageName}`);
             continue;
           }
-          
+
           try {
-            const imageBuffer = await file.async("nodebuffer");
-            
-            // Double-check actual extracted size matches expected size
-            const expectedSize = file._data?.uncompressedSize || 0;
-            if (imageBuffer.length > expectedSize * 1.1) { // Allow 10% variance
-              console.warn(`Image file size mismatch for ${imageName}, skipping for safety`);
+            const imageBuffer = await safeExtractFile(file, MAX_INDIVIDUAL_FILE_SIZE);
+
+            // Validate that we actually got image data
+            if (imageBuffer.length === 0) {
+              console.warn(`Skipping empty image file: ${imageName}`);
               continue;
             }
-            
+
             imageFiles.set(imageName, imageBuffer);
           } catch (error) {
-            console.warn(`Failed to extract image file ${imageName}:`, error);
+            console.warn(`Failed to extract image file ${imageName}:`, error instanceof Error ? error.message : 'Unknown error');
             // Continue processing other files instead of failing the entire import
           }
         }
       }
     }
-    
+
+    console.log(`ZIP extraction completed safely: ${fileCount} files, ${Math.round(totalExtractedSize / 1024)}KB total`);
     return { backupData, imageFiles };
   }
   
@@ -262,7 +327,7 @@ export class ImportService {
           
           // Only increment counter if location was actually created (not already existed)
           if (!locationExists) {
-            summary.locationsCreated++;
+            summary.locationsImported++;
           }
         } catch (error) {
           summary.warnings.push(`Failed to restore location '${loc.name}': ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -306,7 +371,7 @@ export class ImportService {
             
             if (updatedPlant) {
               plantIdMapping.set(plant.id, updatedPlant.id);
-              summary.plantsUpdated++;
+              summary.plantsImported++;
             }
             continue;
           }
@@ -336,15 +401,15 @@ export class ImportService {
           );
           
           if (imageRestored) {
-            summary.imagesRestored++;
+            summary.imagesImported++;
           }
         }
         
-        summary.plantsCreated++;
+        summary.plantsImported++;
         
       } catch (error) {
         summary.warnings.push(`Failed to restore plant '${plant.name}': ${error instanceof Error ? error.message : 'Unknown error'}`);
-        summary.plantsSkipped++;
+        // Note: Failed plants are not counted in plantsImported
       }
     }
   }
@@ -409,7 +474,7 @@ export class ImportService {
         };
         
         await this.storage.createWateringHistory(wateringData);
-        summary.wateringHistoryCreated++;
+        summary.wateringHistoryImported++;
         
       } catch (error) {
         summary.warnings.push(`Failed to restore watering history entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
