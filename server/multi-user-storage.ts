@@ -617,6 +617,26 @@ export class MultiUserStorage implements IStorage {
       .orderBy(plantHealthRecords.recordedAt);
   }
 
+  async getHealthRecord(id: number): Promise<PlantHealthRecord | undefined> {
+    const userId = getCurrentUserId();
+    
+    if (userId === null) {
+      return undefined;
+    }
+    
+    const [record] = await db
+      .select()
+      .from(plantHealthRecords)
+      .where(
+        and(
+          eq(plantHealthRecords.id, id),
+          eq(plantHealthRecords.userId, userId)
+        )
+      );
+    
+    return record || undefined;
+  }
+
   async getAllHealthRecordsForUser(): Promise<PlantHealthRecord[]> {
     const userId = getCurrentUserId();
     

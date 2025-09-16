@@ -65,6 +65,7 @@ export interface IStorage {
   
   // Plant Health Records methods
   getPlantHealthRecords(plantId: number): Promise<PlantHealthRecord[]>;
+  getHealthRecord(id: number): Promise<PlantHealthRecord | undefined>;
   getAllHealthRecordsForUser(): Promise<PlantHealthRecord[]>;
   createHealthRecord(record: InsertPlantHealthRecord): Promise<PlantHealthRecord>;
   updateHealthRecord(id: number, record: Partial<InsertPlantHealthRecord>): Promise<PlantHealthRecord | undefined>;

@@ -2,7 +2,7 @@ import express, { type Express, Request, Response, NextFunction } from "express"
 import { createServer, type Server } from "http";
 import { storage as dbStorage } from "./multi-user-storage";
 import { z } from "zod";
-import { insertPlantSchema, insertLocationSchema, insertPlantSpeciesSchema, insertNotificationSettingsSchema, insertUserSchema } from "@shared/schema";
+import { insertPlantSchema, insertLocationSchema, insertPlantSpeciesSchema, insertNotificationSettingsSchema, insertUserSchema, insertPlantHealthRecordSchema, insertCareActivitySchema } from "@shared/schema";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
@@ -765,6 +765,263 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       const errorMessage = error?.message || "Failed to delete plant species";
       res.status(400).json({ message: errorMessage });
+    }
+  });
+
+  // Plant Health Records endpoints
+  
+  // Get health records for a specific plant
+  apiRouter.get("/plants/:id/health-records", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const plantId = parseInt(req.params.id);
+      if (isNaN(plantId)) {
+        return res.status(400).json({ message: "Invalid plant ID" });
+      }
+
+      // Get authenticated user ID
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      // Verify plant ownership first
+      const plant = await dbStorage.getPlant(plantId);
+      if (!plant) {
+        return res.status(404).json({ message: "Plant not found" });
+      }
+
+      if (plant.userId !== userId) {
+        return res.status(403).json({ message: "Access denied: Plant does not belong to you" });
+      }
+
+      const healthRecords = await dbStorage.getPlantHealthRecords(plantId);
+      res.json(healthRecords);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch health records" });
+    }
+  });
+
+  // Create a new health record
+  apiRouter.post("/plants/:id/health-records", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const plantId = parseInt(req.params.id);
+      if (isNaN(plantId)) {
+        return res.status(400).json({ message: "Invalid plant ID" });
+      }
+
+      // Get authenticated user ID from session
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      // Verify plant ownership first
+      const plant = await dbStorage.getPlant(plantId);
+      if (!plant) {
+        return res.status(404).json({ message: "Plant not found" });
+      }
+
+      if (plant.userId !== userId) {
+        return res.status(403).json({ message: "Access denied: Plant does not belong to you" });
+      }
+
+      // Validate the request data
+      const parsedData = insertPlantHealthRecordSchema.safeParse({
+        ...req.body,
+        plantId,
+        userId
+      });
+
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid health record data", 
+          errors: parsedData.error.format()
+        });
+      }
+
+      const healthRecord = await dbStorage.createHealthRecord(parsedData.data);
+      res.status(201).json(healthRecord);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create health record" });
+    }
+  });
+
+  // Update a health record
+  apiRouter.patch("/health-records/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid health record ID" });
+      }
+
+      // Get authenticated user ID
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      // First, load the health record to verify ownership
+      const existingRecord = await dbStorage.getHealthRecord(id);
+      if (!existingRecord) {
+        return res.status(404).json({ message: "Health record not found" });
+      }
+
+      // Verify ownership - return 403 if record belongs to different user
+      if (existingRecord.userId !== userId) {
+        return res.status(403).json({ message: "Access denied: Health record does not belong to you" });
+      }
+
+      // Create safe update schema that excludes plantId and userId to prevent privilege escalation
+      const safeUpdateSchema = insertPlantHealthRecordSchema.omit({ plantId: true, userId: true }).partial();
+      const parsedData = safeUpdateSchema.safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid health record data", 
+          errors: parsedData.error.format()
+        });
+      }
+
+      // Now update the record (ownership already verified)
+      const updatedHealthRecord = await dbStorage.updateHealthRecord(id, parsedData.data);
+      if (!updatedHealthRecord) {
+        return res.status(500).json({ message: "Failed to update health record" });
+      }
+
+      res.json(updatedHealthRecord);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update health record" });
+    }
+  });
+
+  // Delete a health record
+  apiRouter.delete("/health-records/:id", isAuthenticated, async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid health record ID" });
+      }
+
+      // Get authenticated user ID
+      const userId = getCurrentUserId();
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      // First, load the health record to verify ownership
+      const existingRecord = await dbStorage.getHealthRecord(id);
+      if (!existingRecord) {
+        return res.status(404).json({ message: "Health record not found" });
+      }
+
+      // Verify ownership - return 403 if record belongs to different user
+      if (existingRecord.userId !== userId) {
+        return res.status(403).json({ message: "Access denied: Health record does not belong to you" });
+      }
+
+      // Now delete the record (ownership already verified)
+      const deleted = await dbStorage.deleteHealthRecord(id);
+      if (!deleted) {
+        return res.status(500).json({ message: "Failed to delete health record" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete health record" });
+    }
+  });
+
+  // Care Activities endpoints
+  
+  // Get care activities for a specific plant
+  apiRouter.get("/plants/:id/care-activities", async (req: Request, res: Response) => {
+    try {
+      const plantId = parseInt(req.params.id);
+      if (isNaN(plantId)) {
+        return res.status(400).json({ message: "Invalid plant ID" });
+      }
+
+      const careActivities = await dbStorage.getPlantCareActivities(plantId);
+      res.json(careActivities);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch care activities" });
+    }
+  });
+
+  // Create a new care activity
+  apiRouter.post("/plants/:id/care-activities", async (req: Request, res: Response) => {
+    try {
+      const plantId = parseInt(req.params.id);
+      if (isNaN(plantId)) {
+        return res.status(400).json({ message: "Invalid plant ID" });
+      }
+
+      // Validate the request data
+      const parsedData = insertCareActivitySchema.safeParse({
+        ...req.body,
+        plantId,
+        userId: 0 // Will be set by storage layer
+      });
+
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid care activity data", 
+          errors: parsedData.error.format()
+        });
+      }
+
+      const careActivity = await dbStorage.createCareActivity(parsedData.data);
+      res.status(201).json(careActivity);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create care activity" });
+    }
+  });
+
+  // Update a care activity
+  apiRouter.patch("/care-activities/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid care activity ID" });
+      }
+
+      const updateSchema = insertCareActivitySchema.partial();
+      const parsedData = updateSchema.safeParse(req.body);
+
+      if (!parsedData.success) {
+        return res.status(400).json({ 
+          message: "Invalid care activity data", 
+          errors: parsedData.error.format()
+        });
+      }
+
+      const updatedActivity = await dbStorage.updateCareActivity(id, parsedData.data);
+      if (!updatedActivity) {
+        return res.status(404).json({ message: "Care activity not found" });
+      }
+
+      res.json(updatedActivity);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update care activity" });
+    }
+  });
+
+  // Delete a care activity
+  apiRouter.delete("/care-activities/:id", async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid care activity ID" });
+      }
+
+      const deleted = await dbStorage.deleteCareActivity(id);
+      if (!deleted) {
+        return res.status(404).json({ message: "Care activity not found" });
+      }
+
+      res.json({ success: true });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete care activity" });
     }
   });
 

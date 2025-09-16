@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Image } from "lucide-react";
+import { PlantHealthTracker } from "@/components/ui/plant-health-tracker";
 
 export default function PlantDetails() {
   const params = useParams();
@@ -278,6 +279,8 @@ export default function PlantDetails() {
             </div>
           </CardContent>
         </Card>
+
+        <PlantHealthTracker plantId={plantId} plantName={plant.name} />
 
         <div className="flex justify-center">
           <AlertDialog>
